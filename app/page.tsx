@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 
 type Channel = 'LinkedIn' | 'X / Twitter' | 'Instagram';
 type InputMode = 'Topic' | 'URL' | 'Paste text';
+type ContentResult = { eyebrow: string; body: string; meta: string };
 
 const agents = [
   { name: 'Scout', role: 'Research', icon: '⌕', color: 'lime' },
@@ -12,7 +13,7 @@ const agents = [
   { name: 'Pulse', role: 'Quality', icon: '✓', color: 'pink' },
 ];
 
-const results: Record<Channel, { eyebrow: string; body: string; meta: string }> = {
+const fallbackResults: Record<Channel, ContentResult> = {
   LinkedIn: {
     eyebrow: 'Thought leadership · 176 words',
     body: `Your best marketing team might not be a team at all.\n\nWe gave 4 AI agents one brief and watched them work:\n\n→ Scout found the sharpest angle\n→ Muse shaped the narrative\n→ Scribe adapted it for every channel\n→ Pulse challenged every weak claim\n\nThe result wasn't just faster content. It was more considered content — because each agent had one job and a clear standard for success.\n\nThe future of content isn't one giant prompt. It's a small, focused team that never loses the thread.`,
@@ -37,31 +38,47 @@ export default function Home() {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(100);
   const [copied, setCopied] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [generatedResults, setGeneratedResults] = useState(fallbackResults);
+  const [qualityScore, setQualityScore] = useState(94);
+  const [runMode, setRunMode] = useState('OpenRouter ready');
+  const resultsRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
-    if (!running) return;
-    const timer = setInterval(() => {
-      setProgress((value) => {
-        if (value >= 100) {
-          clearInterval(timer);
-          setRunning(false);
-          return 100;
-        }
-        return value + 4;
-      });
-    }, 90);
-    return () => clearInterval(timer);
-  }, [running]);
-
-  function generate() {
+  async function generate() {
     if (!topic.trim()) return;
     setProgress(4);
     setRunning(true);
+    setHasGenerated(false);
     setCopied(false);
+    setRunMode('Agents running via OpenRouter');
+
+    const timer = window.setInterval(() => setProgress((value) => Math.min(88, value + 3)), 300);
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: topic, inputMode, audience: 'Tech leaders', tone: 'Smart and bold' }),
+      });
+      const data = await response.json() as { outputs?: Record<Channel, ContentResult>; score?: number; model?: string; error?: string };
+      if (!response.ok || !data.outputs) throw new Error(data.error || 'Generation failed');
+      setGeneratedResults(data.outputs);
+      setQualityScore(data.score || 90);
+      setRunMode(`Live · ${data.model || 'OpenRouter'}`);
+    } catch {
+      setGeneratedResults(fallbackResults);
+      setQualityScore(94);
+      setRunMode('Demo fallback · add OpenRouter key for live AI');
+    } finally {
+      window.clearInterval(timer);
+      setProgress(100);
+      setRunning(false);
+      setHasGenerated(true);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
   }
 
   async function copyResult() {
-    await navigator.clipboard?.writeText(results[active].body);
+    await navigator.clipboard?.writeText(generatedResults[active].body);
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
   }
@@ -81,6 +98,7 @@ export default function Home() {
           <span>relay</span>
         </a>
         <div className="top-actions">
+          <span className="model-badge">✦ {runMode}</span>
           <span className="demo-badge"><span /> Demo workspace</span>
           <button className="icon-button" aria-label="Open settings">☼</button>
           <span className="avatar">AK</span>
@@ -137,7 +155,7 @@ export default function Home() {
           </div>
 
           <section className="pipeline" id="pipeline">
-            <div className="section-heading"><div><span className="live-dot" /> AGENT WORKFLOW</div><p>{running ? `${progress}% complete` : 'Completed in 18.4s'}</p></div>
+            <div className="section-heading"><div><span className="live-dot" /> AGENT WORKFLOW</div><p>{running ? `${progress}% complete` : hasGenerated ? 'Run complete' : 'Ready to run'}</p></div>
             <div className="agent-grid">
               {agents.map((agent, index) => {
                 const state = running ? (index < activeAgent ? 'done' : index === activeAgent ? 'working' : 'waiting') : 'done';
@@ -145,23 +163,24 @@ export default function Home() {
                   <div className="agent-icon">{agent.icon}</div>
                   <div><strong>{agent.name}</strong><p>{agent.role}</p></div>
                   <span className="status">{state === 'done' ? '✓ Done' : state === 'working' ? '• Working' : 'Waiting'}</span>
-                  <small>{['Extracted 6 insights', 'Built content angle', 'Drafted 3 formats', 'Quality score: 94'][index]}</small>
+                  <small>{['Extracted key insights', 'Built content angle', 'Drafted 3 formats', `Quality score: ${qualityScore}`][index]}</small>
                 </article>;
               })}
             </div>
           </section>
 
-          <section className={`results ${running ? 'is-running' : ''}`}>
+          {hasGenerated && <section className="results results-revealed" ref={resultsRef}>
+            <div className="ready-banner"><span>✓</span><div><strong>3 channel drafts are ready</strong><small>Reviewed by Pulse · Quality score {qualityScore} · {runMode}</small></div></div>
             <div className="result-top"><div><span>OUTPUTS</span><h2>Ready to publish</h2></div><button className="more-button">•••</button></div>
             <div className="channel-tabs">
-              {(Object.keys(results) as Channel[]).map((channel) => <button key={channel} onClick={() => setActive(channel)} className={active === channel ? 'active' : ''}><span>{channel === 'LinkedIn' ? 'in' : channel === 'X / Twitter' ? '𝕏' : '◉'}</span>{channel}</button>)}
+              {(Object.keys(generatedResults) as Channel[]).map((channel) => <button key={channel} onClick={() => setActive(channel)} className={active === channel ? 'active' : ''}><span>{channel === 'LinkedIn' ? 'in' : channel === 'X / Twitter' ? '𝕏' : '◉'}</span>{channel}</button>)}
             </div>
             <div className="output-card">
-              <div className="output-header"><span>{results[active].eyebrow}</span><div><button aria-label="Edit content">✎</button><button onClick={copyResult}>{copied ? '✓ Copied' : '▣ Copy'}</button></div></div>
-              <p className="output-copy">{results[active].body}</p>
-              <div className="output-footer"><span>{results[active].meta}</span><button onClick={generate}>Regenerate ↻</button></div>
+              <div className="output-header"><span>{generatedResults[active].eyebrow}</span><div><button aria-label="Edit content">✎</button><button onClick={copyResult}>{copied ? '✓ Copied' : '▣ Copy'}</button></div></div>
+              <p className="output-copy">{generatedResults[active].body}</p>
+              <div className="output-footer"><span>{generatedResults[active].meta}</span><button onClick={generate}>Regenerate ↻</button></div>
             </div>
-          </section>
+          </section>}
         </section>
       </div>
     </main>

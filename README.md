@@ -17,7 +17,9 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`, change the input, and press **Create content**. The showcase flow is intentionally deterministic, so it works reliably without API keys during a live demo.
+Copy `.env.example` to `.env`, add an [OpenRouter API key](https://openrouter.ai/keys), then run the app. `OPENROUTER_MODEL` accepts any model slug from the [OpenRouter catalog](https://openrouter.ai/models); `openrouter/auto` lets OpenRouter choose a suitable model for each agent call.
+
+Open `http://localhost:3000`, change the input, and press **Create content**. With a key, Relay runs a real research → strategy → parallel writing → quality-review pipeline. Without a key, it falls back to deterministic output so a live demonstration still works.
 
 ## 90-second demo script
 
@@ -27,6 +29,6 @@ Open `http://localhost:3000`, change the input, and press **Create content**. Th
 4. Switch between LinkedIn, X, and Instagram to show channel-native outputs.
 5. Use **Copy** to demonstrate the final publish-ready handoff.
 
-## Turning the demo into a live AI product
+## How the live agent pipeline works
 
-Connect the orchestrator to a server-side Codex/OpenAI workflow. Run Scout first, pass its structured findings to Muse, fan out Scribe workers by channel, and finish with Pulse as a shared evaluator. Keep the current deterministic data as a graceful demo fallback.
+The server runs Scout first, passes its research to Muse, fans out three Scribe workers in parallel, and finishes with Pulse as a shared evaluator. API keys remain server-side and are never sent to the browser. The model badge shows whether the current run used OpenRouter or the deterministic fallback.
