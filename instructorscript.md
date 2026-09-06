@@ -13,6 +13,8 @@ By the end of 30 minutes, the audience should understand why multi-agent workflo
 - Use the default topic: **Why multi-agent AI teams are the future of creative work**.
 - Confirm the **Create content** button starts the animated workflow.
 - Confirm the page automatically moves to **3 channel drafts are ready** when generation finishes.
+- Confirm Topic, URL, and Paste text each preserve their own draft when switching tabs.
+- In URL mode, point out the source label in the green completion banner; it confirms which fetched page grounded the run.
 - Add `OPENROUTER_API_KEY` to `.env` for live generation. Set `OPENROUTER_MODEL=openrouter/auto` or choose any OpenRouter model slug.
 - Allow roughly 45–90 seconds for a live run: it performs Scout and Muse sequentially, three Scribe calls in parallel, then the Pulse review.
 - If a key is unavailable or the provider fails, Relay's built-in engine still creates topic-specific content so the stage demo remains fully interactive.
@@ -216,3 +218,6 @@ If time is running short, skip the architecture deep dive and demonstrate the wo
 - Updated the demo flow so completed outputs reveal only after generation and automatically scroll into view.
 - Added real OpenRouter orchestration with model selection through `.env` and a functional topic-specific built-in engine when no key is configured.
 - Verified a complete live OpenRouter run across all six model calls; the Auto Router selected `deepseek/deepseek-v4-flash-0731` for the test run and returned all three channel drafts plus a Pulse score.
+- Preserved separate drafts for Topic, URL, and Paste text so switching input modes never clears the presenter’s work.
+- Added distinct input processing: exact topic briefs, safe URL fetching and readable-text extraction, and pasted-text normalization for synthesis.
+- Tightened the agent contract so all channel drafts must use at least two concrete source details; live URL verification returned source-grounded drafts for “Example Domain.”

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { initialSourceDrafts, updateSourceDraft } from '../lib/input-drafts';
 
 type Channel = 'LinkedIn' | 'X / Twitter' | 'Instagram';
 type InputMode = 'Topic' | 'URL' | 'Paste text';
@@ -58,9 +59,9 @@ function buildFallbackResults(source: string): Record<Channel, ContentResult> {
 }
 
 export default function Home() {
-  const [topic, setTopic] = useState('Why multi-agent AI teams are the future of creative work');
   const [active, setActive] = useState<Channel>('LinkedIn');
   const [inputMode, setInputMode] = useState<InputMode>('Topic');
+  const [sources, setSources] = useState<Record<InputMode, string>>({ ...initialSourceDrafts });
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(100);
   const [copied, setCopied] = useState(false);
@@ -68,7 +69,10 @@ export default function Home() {
   const [generatedResults, setGeneratedResults] = useState(fallbackResults);
   const [qualityScore, setQualityScore] = useState(94);
   const [runMode, setRunMode] = useState('OpenRouter ready');
+  const [sourceLabel, setSourceLabel] = useState('');
+  const [error, setError] = useState('');
   const resultsRef = useRef<HTMLElement>(null);
+  const topic = sources[inputMode];
 
   async function generate() {
     if (!topic.trim()) return;
@@ -76,30 +80,44 @@ export default function Home() {
     setRunning(true);
     setHasGenerated(false);
     setCopied(false);
+    setError('');
     setRunMode('Agents running via OpenRouter');
 
     const timer = window.setInterval(() => setProgress((value) => Math.min(88, value + 3)), 300);
+    let shouldShowResults = true;
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: topic, inputMode, audience: 'Tech leaders', tone: 'Smart and bold' }),
       });
-      const data = await response.json() as { outputs?: Record<Channel, ContentResult>; score?: number; model?: string; error?: string };
-      if (!response.ok || !data.outputs) throw new Error(data.error || 'Generation failed');
+      const data = await response.json() as { outputs?: Record<Channel, ContentResult>; score?: number; model?: string; error?: string; source?: { label?: string } };
+      if (!response.ok || !data.outputs) {
+        if (response.status >= 400 && response.status < 500 && response.status !== 503) throw new Error(`SOURCE_ERROR:${data.error || 'The source could not be processed.'}`);
+        if (response.status === 503) throw new Error('USE_FALLBACK');
+        throw new Error(`RUN_ERROR:${data.error || 'The live agent run failed. Please try again.'}`);
+      }
       setGeneratedResults(data.outputs);
       setQualityScore(data.score || 90);
       setRunMode(`Live · ${data.model || 'OpenRouter'}`);
-    } catch {
-      setGeneratedResults(buildFallbackResults(topic));
-      setQualityScore(94);
-      setRunMode('Built-in engine · OpenRouter ready');
+      setSourceLabel(data.source?.label || topic.slice(0, 80));
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : '';
+      if (message.startsWith('SOURCE_ERROR:') || message.startsWith('RUN_ERROR:')) {
+        shouldShowResults = false;
+        setError(message.replace(/^(SOURCE_ERROR|RUN_ERROR):/, ''));
+      } else {
+        setGeneratedResults(buildFallbackResults(topic));
+        setQualityScore(94);
+        setRunMode('Built-in engine · OpenRouter ready');
+        setSourceLabel(topic.slice(0, 80));
+      }
     } finally {
       window.clearInterval(timer);
       setProgress(100);
       setRunning(false);
-      setHasGenerated(true);
-      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+      setHasGenerated(shouldShowResults);
+      if (shouldShowResults) setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
     }
   }
 
@@ -170,15 +188,16 @@ export default function Home() {
           <div className="composer">
             <div className="input-tabs">
               {(['Topic', 'URL', 'Paste text'] as InputMode[]).map((mode) => (
-                <button key={mode} className={inputMode === mode ? 'selected' : ''} onClick={() => { setInputMode(mode); setTopic(''); }}>{mode}</button>
+                <button key={mode} className={inputMode === mode ? 'selected' : ''} onClick={() => setInputMode(mode)}>{mode}</button>
               ))}
             </div>
-            <textarea value={topic} placeholder={placeholders[inputMode]} onChange={(event) => setTopic(event.target.value)} aria-label={`Content source: ${inputMode}`} />
+            <textarea value={topic} placeholder={placeholders[inputMode]} onChange={(event) => setSources((current) => updateSourceDraft(current, inputMode, event.target.value))} aria-label={`Content source: ${inputMode}`} />
             <div className="composer-footer">
               <div className="options"><button>Audience: <strong>Tech leaders</strong> ⌄</button><button>Tone: <strong>Smart & bold</strong> ⌄</button></div>
               <button className="generate" onClick={generate} disabled={running || !topic.trim()}><span>✦</span>{running ? 'Agents working…' : 'Create content'}</button>
             </div>
           </div>
+          {error && <div className="source-error" role="alert"><span>!</span><div><strong>Couldn’t use that source</strong><p>{error}</p></div></div>}
 
           <section className="pipeline" id="pipeline">
             <div className="section-heading"><div><span className="live-dot" /> AGENT WORKFLOW</div><p>{running ? `${progress}% complete` : hasGenerated ? 'Run complete' : 'Ready to run'}</p></div>
@@ -196,7 +215,7 @@ export default function Home() {
           </section>
 
           {hasGenerated && <section className="results results-revealed" ref={resultsRef}>
-            <div className="ready-banner"><span>✓</span><div><strong>3 channel drafts are ready</strong><small>Reviewed by Pulse · Quality score {qualityScore} · {runMode}</small></div></div>
+            <div className="ready-banner"><span>✓</span><div><strong>3 channel drafts are ready</strong><small>Source: {sourceLabel} · Pulse score {qualityScore} · {runMode}</small></div></div>
             <div className="result-top"><div><span>OUTPUTS</span><h2>Ready to publish</h2></div><button className="more-button">•••</button></div>
             <div className="channel-tabs">
               {(Object.keys(generatedResults) as Channel[]).map((channel) => <button key={channel} onClick={() => setActive(channel)} className={active === channel ? 'active' : ''}><span>{channel === 'LinkedIn' ? 'in' : channel === 'X / Twitter' ? '𝕏' : '◉'}</span>{channel}</button>)}
