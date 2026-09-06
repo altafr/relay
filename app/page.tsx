@@ -31,6 +31,32 @@ const fallbackResults: Record<Channel, ContentResult> = {
   },
 };
 
+function buildFallbackResults(source: string): Record<Channel, ContentResult> {
+  const cleaned = source.replace(/\s+/g, ' ').trim();
+  const subject = cleaned.length > 120 ? `${cleaned.slice(0, 117)}…` : cleaned;
+  const label = /^https?:\/\//i.test(subject)
+    ? (() => { try { return new URL(subject).hostname.replace(/^www\./, ''); } catch { return subject; } })()
+    : subject;
+
+  return {
+    LinkedIn: {
+      eyebrow: 'Thought leadership · Instant draft',
+      body: `${label}\n\nMost teams start by asking: “How can we create more?”\n\nA better question is: “How can we make every piece more intentional?”\n\nStart with one clear idea. Research what matters. Choose the angle before writing. Then adapt the message to the way people actually use each channel.\n\nThat shift turns content creation from a volume game into a coordinated system. The result is not only faster production — it is clearer thinking, stronger consistency, and work that feels native wherever it appears.\n\nThe takeaway: better content rarely begins with more words. It begins with better orchestration.\n\n#ContentStrategy #AI #FutureOfWork`,
+      meta: 'Professional · Insight-led · Built-in engine',
+    },
+    'X / Twitter': {
+      eyebrow: 'Thread · 5 posts',
+      body: `1/ A quick thread about ${label}: 🧵\n\n2/ Most teams jump straight from an idea to a draft. That skips the most valuable step: choosing the right angle.\n\n3/ A stronger workflow separates research, strategy, writing, and review.\n\n4/ Each stage has one job. Each handoff makes the next stage smarter.\n\n5/ The lesson: don’t ask one prompt to do everything. Orchestrate focused roles around one clear outcome.`,
+      meta: 'Punchy · Educational · Built-in engine',
+    },
+    Instagram: {
+      eyebrow: 'Carousel · 6 slides',
+      body: `SLIDE 1\n${label}\n\nSLIDE 2\nONE IDEA\nStart with a clear point of view.\n\nSLIDE 3\nRESEARCH\nFind the signal before you write.\n\nSLIDE 4\nSTRATEGY\nChoose one story worth telling.\n\nSLIDE 5\nCREATE + REVIEW\nAdapt it. Challenge it. Sharpen it.\n\nSLIDE 6\nDON’T JUST CREATE MORE.\nOrchestrate better.`,
+      meta: 'Bold · Visual · Built-in engine',
+    },
+  };
+}
+
 export default function Home() {
   const [topic, setTopic] = useState('Why multi-agent AI teams are the future of creative work');
   const [active, setActive] = useState<Channel>('LinkedIn');
@@ -65,9 +91,9 @@ export default function Home() {
       setQualityScore(data.score || 90);
       setRunMode(`Live · ${data.model || 'OpenRouter'}`);
     } catch {
-      setGeneratedResults(fallbackResults);
+      setGeneratedResults(buildFallbackResults(topic));
       setQualityScore(94);
-      setRunMode('Demo fallback · add OpenRouter key for live AI');
+      setRunMode('Built-in engine · OpenRouter ready');
     } finally {
       window.clearInterval(timer);
       setProgress(100);

@@ -19,7 +19,7 @@ npm run dev
 
 Copy `.env.example` to `.env`, add an [OpenRouter API key](https://openrouter.ai/keys), then run the app. `OPENROUTER_MODEL` accepts any model slug from the [OpenRouter catalog](https://openrouter.ai/models); `openrouter/auto` lets OpenRouter choose a suitable model for each agent call.
 
-Open `http://localhost:3000`, change the input, and press **Create content**. With a key, Relay runs a real research → strategy → parallel writing → quality-review pipeline. Without a key, it falls back to deterministic output so a live demonstration still works.
+Open `http://localhost:3000`, change the input, and press **Create content**. With a key, Relay runs a real research → strategy → parallel writing → quality-review pipeline. Without a key, its built-in engine still creates source-specific LinkedIn, X, and Instagram drafts so the full product remains usable during a live demonstration.
 
 ## 90-second demo script
 

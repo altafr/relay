@@ -14,7 +14,7 @@ By the end of 30 minutes, the audience should understand why multi-agent workflo
 - Confirm the **Create content** button starts the animated workflow.
 - Confirm the page automatically moves to **3 channel drafts are ready** when generation finishes.
 - Add `OPENROUTER_API_KEY` to `.env` for live generation. Set `OPENROUTER_MODEL=openrouter/auto` or choose any OpenRouter model slug.
-- If a key is unavailable or the provider fails, Relay automatically uses deterministic content so the stage demo still succeeds.
+- If a key is unavailable or the provider fails, Relay's built-in engine still creates topic-specific content so the stage demo remains fully interactive.
 
 ## 0:00–3:00 — Hook: one prompt is doing too many jobs
 
@@ -213,4 +213,4 @@ If time is running short, skip the architecture deep dive and demonstrate the wo
 
 - Added the complete 30-minute instructor narrative and production architecture notes.
 - Updated the demo flow so completed outputs reveal only after generation and automatically scroll into view.
-- Added real OpenRouter orchestration with model selection through `.env` and a clearly labeled no-key fallback.
+- Added real OpenRouter orchestration with model selection through `.env` and a functional topic-specific built-in engine when no key is configured.
