@@ -109,6 +109,25 @@ async function readLimitedBody(response: Response) {
   return new TextDecoder().decode(merged);
 }
 
+async function fetchReaderFallback(sourceUrl: URL, fetcher: typeof fetch) {
+  const readerUrl = new URL(`https://r.jina.ai/${sourceUrl.toString()}`);
+  const response = await fetcher(readerUrl, {
+    redirect: 'error',
+    headers: { Accept: 'text/plain' },
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!response.ok) throw new SourceContextError(`The page blocked direct access and its reader fallback returned HTTP ${response.status}.`, 422);
+
+  const raw = await readLimitedBody(response);
+  const title = cleanWhitespace(raw.match(/^Title:\s*(.+)$/im)?.[1] || '');
+  const contentMarker = raw.match(/^Markdown Content:\s*$/im);
+  const markdown = contentMarker?.index === undefined ? raw : raw.slice(contentMarker.index + contentMarker[0].length);
+  const text = cleanWhitespace(markdown).slice(0, MAX_CONTEXT_CHARS);
+  if (text.length < 40) throw new SourceContextError('Not enough readable text was found at that URL.', 422);
+
+  return { title, text, url: sourceUrl.toString(), extraction: 'reader' as const };
+}
+
 export async function fetchUrlContext(rawUrl: string, fetcher: typeof fetch = fetch) {
   let currentUrl = assertSafeUrl(rawUrl);
 
@@ -118,6 +137,10 @@ export async function fetchUrlContext(rawUrl: string, fetcher: typeof fetch = fe
       headers: { Accept: 'text/html,application/xhtml+xml,text/plain;q=0.9' },
       signal: AbortSignal.timeout(12_000),
     });
+
+    if ([401, 403, 429].includes(response.status)) {
+      return fetchReaderFallback(currentUrl, fetcher);
+    }
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location');
@@ -138,7 +161,7 @@ export async function fetchUrlContext(rawUrl: string, fetcher: typeof fetch = fe
       ? { title: '', text: cleanWhitespace(raw).slice(0, MAX_CONTEXT_CHARS) }
       : extractReadableText(raw);
     if (extracted.text.length < 40) throw new SourceContextError('Not enough readable text was found at that URL.', 422);
-    return { ...extracted, url: currentUrl.toString() };
+    return { ...extracted, url: currentUrl.toString(), extraction: 'direct' as const };
   }
 
   throw new SourceContextError('The URL could not be imported.', 422);
@@ -154,7 +177,7 @@ export async function prepareSourceContext(mode: InputMode, rawSource: string, f
     return {
       kind: 'url' as const,
       label: page.title || new URL(page.url).hostname,
-      context: `IMPORTED WEB PAGE\nTitle: ${page.title || 'Untitled page'}\nURL: ${page.url}\n\nPAGE CONTENT:\n${page.text}`,
+      context: `IMPORTED WEB PAGE\nTitle: ${page.title || 'Untitled page'}\nURL: ${page.url}\nExtraction: ${page.extraction}\n\nPAGE CONTENT:\n${page.text}`,
     };
   }
 

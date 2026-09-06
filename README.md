@@ -24,7 +24,7 @@ Open `http://localhost:3000`, change the input, and press **Create content**. Wi
 ### Input behavior
 
 - **Topic** sends the exact typed topic into the research and strategy brief.
-- **URL** fetches the page server-side, removes scripts/styles/markup, and uses the extracted title and readable text as agent context. Local/private network URLs, unsafe redirects, non-text responses, and oversized pages are rejected.
+- **URL** fetches the page server-side, removes scripts/styles/markup, and uses the extracted title and readable text as agent context. If a public page returns an access challenge (`401`, `403`, or `429`), Relay retries through Jina Reader. Local/private network URLs, unsafe redirects, non-text responses, and oversized pages are rejected.
 - **Paste text** normalizes the supplied material and instructs Scout to synthesize it before downstream writing.
 - Each tab preserves its own unfinished draft when you switch between input modes.
 

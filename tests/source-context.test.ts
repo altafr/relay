@@ -51,6 +51,25 @@ test('URL mode follows a safe redirect and validates the destination', async () 
   assert.match(result.context, /https:\/\/www\.example\.com\/final/);
 });
 
+test('URL mode uses the reader fallback when a public page blocks direct fetching', async () => {
+  const calls: string[] = [];
+  const fakeFetch: typeof fetch = async (input) => {
+    calls.push(String(input));
+    if (calls.length === 1) return new Response('challenge', { status: 403, headers: { 'content-type': 'text/html' } });
+    return new Response('Title: Protected Article\n\nURL Source: https://openai.com/article\n\nMarkdown Content:\n## Launch details\nThe product introduces three concrete improvements for professional teams.', {
+      status: 200,
+      headers: { 'content-type': 'text/plain' },
+    });
+  };
+
+  const result = await prepareSourceContext('URL', 'https://openai.com/article', fakeFetch);
+  assert.deepEqual(calls, ['https://openai.com/article', 'https://r.jina.ai/https://openai.com/article']);
+  assert.equal(result.label, 'Protected Article');
+  assert.match(result.context, /Extraction: reader/);
+  assert.match(result.context, /three concrete improvements/);
+  assert.doesNotMatch(result.context, /challenge/);
+});
+
 test('URL validation blocks local, private, credentialed, and non-http targets', () => {
   for (const value of ['http://localhost/admin', 'http://127.0.0.1', 'http://10.0.0.2', 'http://192.168.1.5', 'file:///etc/passwd', 'https://user:pass@example.com']) {
     assert.throws(() => assertSafeUrl(value));
