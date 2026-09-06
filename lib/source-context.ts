@@ -10,10 +10,11 @@ export class SourceContextError extends Error {
   }
 }
 
-const MAX_INPUT_CHARS = 15_000;
+const MAX_INPUT_CHARS = 150_000;
 const MAX_DOWNLOAD_BYTES = 1_000_000;
-const MAX_CONTEXT_CHARS = 14_000;
+const MAX_CONTEXT_CHARS = 140_000;
 const MAX_REDIRECTS = 3;
+const MAX_URL_CHARS = 2_048;
 
 function cleanWhitespace(value: string) {
   return value
@@ -41,9 +42,12 @@ function decodeHtmlEntities(value: string) {
 export function extractReadableText(html: string) {
   const title = decodeHtmlEntities(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '')
     .replace(/<[^>]+>/g, ' ');
-  const text = html
+  const primaryContent = html.match(/<(article|main)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/i)?.[2]
+    || html.match(/<body(?:\s[^>]*)?>([\s\S]*?)<\/body>/i)?.[1]
+    || html;
+  const text = primaryContent
     .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/<(script|style|noscript|svg|canvas|template)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<(script|style|noscript|svg|canvas|template|nav|aside|form|dialog)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
     .replace(/<\/(p|div|article|section|main|header|footer|li|h[1-6]|blockquote|tr)>/gi, '\n')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<[^>]+>/g, ' ');
@@ -63,6 +67,7 @@ function isPrivateIpv4(hostname: string) {
 }
 
 export function assertSafeUrl(rawUrl: string) {
+  if (rawUrl.length > MAX_URL_CHARS) throw new SourceContextError('That URL is too long to import.');
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -72,10 +77,18 @@ export function assertSafeUrl(rawUrl: string) {
 
   if (!['http:', 'https:'].includes(url.protocol)) throw new SourceContextError('Only HTTP and HTTPS URLs are supported.');
   if (url.username || url.password) throw new SourceContextError('URLs containing credentials are not supported.');
+  if (url.port && !((url.protocol === 'http:' && url.port === '80') || (url.protocol === 'https:' && url.port === '443'))) {
+    throw new SourceContextError('Only standard web ports are supported.');
+  }
 
   const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
-  const blockedName = hostname === 'localhost' || hostname.endsWith('.localhost') || hostname.endsWith('.local') || hostname.endsWith('.internal');
-  const blockedIpv6 = hostname === '::' || hostname === '::1' || hostname.startsWith('fc') || hostname.startsWith('fd') || hostname.startsWith('fe8') || hostname.startsWith('fe9') || hostname.startsWith('fea') || hostname.startsWith('feb');
+  const isIpLiteral = hostname.includes(':') || /^\d+(?:\.\d+){3}$/.test(hostname);
+  const blockedName = !hostname || (!isIpLiteral && !hostname.includes('.')) || hostname === 'localhost' ||
+    hostname.endsWith('.localhost') || hostname.endsWith('.local') || hostname.endsWith('.internal') ||
+    hostname.endsWith('.test') || hostname.endsWith('.invalid');
+  const blockedIpv6 = hostname === '::' || hostname === '::1' || hostname.startsWith('::ffff:') ||
+    hostname.startsWith('fc') || hostname.startsWith('fd') || hostname.startsWith('fe8') ||
+    hostname.startsWith('fe9') || hostname.startsWith('fea') || hostname.startsWith('feb');
   if (blockedName || blockedIpv6 || isPrivateIpv4(hostname)) throw new SourceContextError('Private or local network URLs cannot be imported.');
 
   return url;
@@ -120,12 +133,19 @@ async function fetchReaderFallback(sourceUrl: URL, fetcher: typeof fetch) {
     throw new SourceContextError('The reader fallback returned an unexpected redirect.', 422);
   }
   if (!response.ok) throw new SourceContextError(`The page blocked direct access and its reader fallback returned HTTP ${response.status}.`, 422);
+  const contentType = response.headers.get('content-type')?.toLowerCase() || '';
+  if (contentType && !contentType.includes('text/plain') && !contentType.includes('text/markdown')) {
+    throw new SourceContextError('The reader fallback did not return readable text.', 415);
+  }
 
   const raw = await readLimitedBody(response);
   const title = cleanWhitespace(raw.match(/^Title:\s*(.+)$/im)?.[1] || '');
   const contentMarker = raw.match(/^Markdown Content:\s*$/im);
   const markdown = contentMarker?.index === undefined ? raw : raw.slice(contentMarker.index + contentMarker[0].length);
-  const text = cleanWhitespace(markdown).slice(0, MAX_CONTEXT_CHARS);
+  const text = cleanWhitespace(markdown
+    .replace(/!\[([^\]]*)\]\([^\s)]+(?:\s+"[^"]*")?\)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^\s)]+(?:\s+"[^"]*")?\)/g, '$1'))
+    .slice(0, MAX_CONTEXT_CHARS);
   if (text.length < 40) throw new SourceContextError('Not enough readable text was found at that URL.', 422);
 
   return { title, text, url: sourceUrl.toString(), extraction: 'reader' as const };
@@ -135,11 +155,16 @@ export async function fetchUrlContext(rawUrl: string, fetcher: typeof fetch = fe
   let currentUrl = assertSafeUrl(rawUrl);
 
   for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect += 1) {
-    const response = await fetcher(currentUrl, {
-      redirect: 'manual',
-      headers: { Accept: 'text/html,application/xhtml+xml,text/plain;q=0.9' },
-      signal: AbortSignal.timeout(12_000),
-    });
+    let response: Response;
+    try {
+      response = await fetcher(currentUrl, {
+        redirect: 'manual',
+        headers: { Accept: 'text/html,application/xhtml+xml,text/plain;q=0.9' },
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch {
+      return fetchReaderFallback(currentUrl, fetcher);
+    }
 
     if ([401, 403, 429].includes(response.status)) {
       return fetchReaderFallback(currentUrl, fetcher);
@@ -173,14 +198,14 @@ export async function fetchUrlContext(rawUrl: string, fetcher: typeof fetch = fe
 export async function prepareSourceContext(mode: InputMode, rawSource: string, fetcher: typeof fetch = fetch) {
   const source = rawSource.trim();
   if (!source) throw new SourceContextError('A source is required.');
-  if (source.length > MAX_INPUT_CHARS) throw new SourceContextError('Source must be under 15,000 characters.', 413);
+  if (source.length > MAX_INPUT_CHARS) throw new SourceContextError('Source must be under 150,000 characters.', 413);
 
   if (mode === 'URL') {
     const page = await fetchUrlContext(source, fetcher);
     return {
       kind: 'url' as const,
       label: page.title || new URL(page.url).hostname,
-      context: `IMPORTED WEB PAGE\nTitle: ${page.title || 'Untitled page'}\nURL: ${page.url}\nExtraction: ${page.extraction}\n\nPAGE CONTENT:\n${page.text}`,
+      context: `IMPORTED WEB PAGE\nTitle: ${page.title || 'Untitled page'}\nURL: ${page.url}\nExtraction: ${page.extraction}\n\nBEGIN UNTRUSTED SOURCE CONTENT\n${page.text}\nEND UNTRUSTED SOURCE CONTENT`,
     };
   }
 
@@ -189,7 +214,7 @@ export async function prepareSourceContext(mode: InputMode, rawSource: string, f
     return {
       kind: 'text' as const,
       label: text.slice(0, 80),
-      context: `PASTED SOURCE TEXT TO SYNTHESIZE:\n${text}`,
+      context: `PASTED SOURCE TEXT TO SYNTHESIZE:\nBEGIN UNTRUSTED SOURCE CONTENT\n${text}\nEND UNTRUSTED SOURCE CONTENT`,
     };
   }
 

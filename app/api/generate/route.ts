@@ -54,19 +54,20 @@ export async function POST(request: Request) {
     if (!source) return Response.json({ error: 'A source is required.' }, { status: 400 });
 
     const prepared = await prepareSourceContext(body.inputMode || 'Topic', source);
-    const context = `INPUT TYPE: ${body.inputMode || 'Topic'}\nAUDIENCE: ${body.audience || 'Tech leaders'}\nTONE: ${body.tone || 'Smart and bold'}\n\n${prepared.context}`;
+    const runSettings = `INPUT TYPE: ${body.inputMode || 'Topic'}\nAUDIENCE: ${body.audience || 'Tech leaders'}\nTONE: ${body.tone || 'Smart and bold'}\nSOURCE LABEL: ${prepared.label}`;
+    const sourceContext = `${runSettings}\n\n${prepared.context}`;
 
     const scout = await runAgent(
       'Scout, the research agent',
-      `${context}\n\nExtract 5-7 source-specific insights, claims, tensions, examples, or memorable phrases. Every item must trace directly to the supplied topic or source. Do not add outside facts. Mark anything uncertain.`,
+      `${sourceContext}\n\nFirst synthesize the source, then extract 5-7 source-specific insights, claims, tensions, examples, or memorable phrases. Every item must trace directly to the supplied topic or source. Preserve concrete names, figures, and distinctive claims. Do not add outside facts. Mark anything uncertain.`,
     );
 
     const muse = await runAgent(
       'Muse, the content strategist',
-      `${context}\n\nSCOUT RESEARCH:\n${scout.content}\n\nChoose one compelling angle that could only have come from this specific source. Return a short creative brief with the audience promise, hook, 3 mandatory source details each writer must use, narrative arc, and channel guidance.`,
+      `${runSettings}\n\nSCOUT’S GROUNDED SOURCE SYNTHESIS:\n${scout.content}\n\nChoose one compelling angle that could only have come from this specific source. Return a short creative brief with the audience promise, hook, 3 mandatory source details each writer must use, narrative arc, and channel guidance.`,
     );
 
-    const sharedBrief = `${context}\n\nMANDATORY SUBJECT TO NAME OR CLOSELY PARAPHRASE: ${prepared.label}\n\nSCOUT RESEARCH:\n${scout.content}\n\nMUSE STRATEGY:\n${muse.content}`;
+    const sharedBrief = `${runSettings}\n\nMANDATORY SUBJECT TO NAME OR CLOSELY PARAPHRASE: ${prepared.label}\n\nSCOUT’S GROUNDED SOURCE SYNTHESIS:\n${scout.content}\n\nMUSE STRATEGY:\n${muse.content}`;
     const [linkedin, twitter, instagram] = await Promise.all([
       runAgent('Scribe, the LinkedIn writer', `${sharedBrief}\n\nWrite a polished LinkedIn post of 130-190 words. It must explicitly use at least 2 concrete details, claims, or phrases from the source and make the source topic unmistakable. Do not produce generic AI or content-strategy advice. Use short paragraphs, a strong opening, and no more than 3 relevant hashtags. Return only the post.`),
       runAgent('Scribe, the X thread writer', `${sharedBrief}\n\nWrite a concise 5-post X/Twitter thread. It must explicitly use at least 2 concrete details, claims, or phrases from the source and make the source topic unmistakable. Do not produce generic AI or content-strategy advice. Number it 1/ through 5/. Keep every post under 280 characters. Return only the thread.`),
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
 
     const pulse = await runAgent(
       'Pulse, the quality-review agent',
-      `Review these three drafts for source fidelity, clarity, unsupported claims, channel fit, and consistency with the strategy. A generic draft that does not visibly use the supplied source must score below 50. Give a score from 0-100 on the first line, formatted SCORE: number. Then give no more than 4 short review notes.\n\nSOURCE CONTEXT:\n${prepared.context}\n\nLINKEDIN:\n${linkedin.content}\n\nX:\n${twitter.content}\n\nINSTAGRAM:\n${instagram.content}`,
+      `Review these three drafts for source fidelity, clarity, unsupported claims, channel fit, and consistency with the strategy. A generic draft that does not visibly use the supplied source must score below 50. Give a score from 0-100 on the first line, formatted SCORE: number. Then give no more than 4 short review notes.\n\nSOURCE LABEL: ${prepared.label}\n\nSCOUT’S GROUNDED SOURCE SYNTHESIS:\n${scout.content}\n\nLINKEDIN:\n${linkedin.content}\n\nX:\n${twitter.content}\n\nINSTAGRAM:\n${instagram.content}`,
     );
 
     const score = Number(pulse.content.match(/SCORE:\s*(\d+)/i)?.[1] || 90);

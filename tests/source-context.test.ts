@@ -23,6 +23,21 @@ test('Paste text mode normalizes and preserves the supplied material for synthes
   assert.doesNotMatch(result.context, /\n{3,}/);
 });
 
+test('Paste text accepts sources up to 150,000 characters and retains a large synthesis context', async () => {
+  const largeSource = `Opening claim. ${'Evidence and supporting context. '.repeat(4_000)}`;
+  assert.ok(largeSource.length > 15_000 && largeSource.length < 150_000);
+  const result = await prepareSourceContext('Paste text', largeSource);
+  assert.equal(result.kind, 'text');
+  assert.ok(result.context.length > 100_000);
+});
+
+test('Sources larger than 150,000 characters are rejected with the expanded limit', async () => {
+  await assert.rejects(
+    () => prepareSourceContext('Paste text', 'x'.repeat(150_001)),
+    /under 150,000 characters/,
+  );
+});
+
 test('URL mode fetches HTML and extracts readable title and body content', async () => {
   const fakeFetch: typeof fetch = async (input) => {
     assert.equal(String(input), 'https://example.com/article');
@@ -82,7 +97,7 @@ test('reader fallback uses edge-compatible manual redirect handling', async () =
 });
 
 test('URL validation blocks local, private, credentialed, and non-http targets', () => {
-  for (const value of ['http://localhost/admin', 'http://127.0.0.1', 'http://10.0.0.2', 'http://192.168.1.5', 'file:///etc/passwd', 'https://user:pass@example.com']) {
+  for (const value of ['http://localhost/admin', 'http://intranet/path', 'http://127.0.0.1', 'http://10.0.0.2', 'http://192.168.1.5', 'http://[::ffff:127.0.0.1]', 'https://example.com:8443', 'https://service.test', 'file:///etc/passwd', 'https://user:pass@example.com']) {
     assert.throws(() => assertSafeUrl(value));
   }
 });
@@ -93,4 +108,23 @@ test('HTML extraction decodes entities and removes executable or decorative cont
   assert.match(result.text, /Hello world/);
   assert.match(result.text, /Useful text/);
   assert.doesNotMatch(result.text, /hidden|no/);
+});
+
+test('HTML extraction prefers article content and removes page chrome', () => {
+  const result = extractReadableText('<html><head><title>Article</title></head><body><nav>Navigation noise</nav><main><article><h1>Core finding</h1><p>The source-specific evidence belongs here.</p><aside>Related links</aside></article></main><footer>Footer noise</footer></body></html>');
+  assert.match(result.text, /Core finding/);
+  assert.match(result.text, /source-specific evidence/);
+  assert.doesNotMatch(result.text, /Navigation noise|Related links|Footer noise/);
+});
+
+test('reader fallback strips Markdown link destinations but preserves their labels', async () => {
+  let calls = 0;
+  const fakeFetch: typeof fetch = async () => {
+    calls += 1;
+    if (calls === 1) return new Response('blocked', { status: 403 });
+    return new Response('Title: Clean Reader\n\nMarkdown Content:\n![Chart](https://cdn.example.com/chart.png) Read the [research report](https://example.com/report) for concrete findings.', { headers: { 'content-type': 'text/plain' } });
+  };
+  const result = await prepareSourceContext('URL', 'https://example.com/protected', fakeFetch);
+  assert.match(result.context, /Chart Read the research report/);
+  assert.doesNotMatch(result.context, /cdn\.example\.com|example\.com\/report/);
 });

@@ -223,3 +223,5 @@ If time is running short, skip the architecture deep dive and demonstrate the wo
 - Tightened the agent contract so all channel drafts must use at least two concrete source details; live URL verification returned source-grounded drafts for “Example Domain.”
 - Added a reader fallback for public pages protected by access challenges, including OpenAI article URLs that return `403` to ordinary server-side fetches.
 - Updated the reader fallback to use edge-compatible manual redirect handling for hosted Sites.
+- Hardened URL ingestion with standard-port enforcement, internal-host blocking, bounded downloads, article-first extraction, Markdown cleanup, and explicit untrusted-source boundaries.
+- Expanded source input from 15,000 to 150,000 characters and optimized large-source orchestration so only Scout receives the full payload.
