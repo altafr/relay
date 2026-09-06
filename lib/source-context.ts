@@ -112,10 +112,13 @@ async function readLimitedBody(response: Response) {
 async function fetchReaderFallback(sourceUrl: URL, fetcher: typeof fetch) {
   const readerUrl = new URL(`https://r.jina.ai/${sourceUrl.toString()}`);
   const response = await fetcher(readerUrl, {
-    redirect: 'error',
+    redirect: 'manual',
     headers: { Accept: 'text/plain' },
     signal: AbortSignal.timeout(20_000),
   });
+  if (response.status >= 300 && response.status < 400) {
+    throw new SourceContextError('The reader fallback returned an unexpected redirect.', 422);
+  }
   if (!response.ok) throw new SourceContextError(`The page blocked direct access and its reader fallback returned HTTP ${response.status}.`, 422);
 
   const raw = await readLimitedBody(response);

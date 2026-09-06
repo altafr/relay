@@ -70,6 +70,17 @@ test('URL mode uses the reader fallback when a public page blocks direct fetchin
   assert.doesNotMatch(result.context, /challenge/);
 });
 
+test('reader fallback uses edge-compatible manual redirect handling', async () => {
+  const redirects: Array<RequestRedirect | undefined> = [];
+  const fakeFetch: typeof fetch = async (_input, init) => {
+    redirects.push(init?.redirect);
+    if (redirects.length === 1) return new Response('challenge', { status: 403 });
+    return new Response('Title: Edge Safe\n\nMarkdown Content:\nThis response contains enough readable content to verify edge-safe behavior.', { headers: { 'content-type': 'text/plain' } });
+  };
+  await prepareSourceContext('URL', 'https://example.com/protected', fakeFetch);
+  assert.deepEqual(redirects, ['manual', 'manual']);
+});
+
 test('URL validation blocks local, private, credentialed, and non-http targets', () => {
   for (const value of ['http://localhost/admin', 'http://127.0.0.1', 'http://10.0.0.2', 'http://192.168.1.5', 'file:///etc/passwd', 'https://user:pass@example.com']) {
     assert.throws(() => assertSafeUrl(value));
