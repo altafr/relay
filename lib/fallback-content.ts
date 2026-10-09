@@ -17,10 +17,11 @@ const hongKongThingsToDo = [
 ];
 
 function listTopic(rawSubject: string) {
-  const match = rawSubject.match(/top\s+10\s+things\s+to\s+do\s+in\s+(.+)/i);
+  const match = rawSubject.match(/top\s+(\d{1,2})\s+things\s+to\s+do\s+in\s+(.+)/i);
   if (!match) return null;
-  const place = match[1].replace(/[?.!]+$/, '').trim();
-  if (/^(hk|hong\s+kong)$/i.test(place)) return { label: 'Hong Kong', items: hongKongThingsToDo };
+  const count = Math.min(10, Math.max(1, Number(match[1])));
+  const place = match[2].replace(/[?.!]+$/, '').trim();
+  if (/^(hk|hong\s+kong)$/i.test(place)) return { label: 'Hong Kong', items: hongKongThingsToDo.slice(0, count) };
   return { label: place, items: null as string[] | null };
 }
 
@@ -31,25 +32,26 @@ export function buildFallbackResults(rawSubject: string): Record<SocialChannel, 
 
   if (list?.items) {
     const numbered = list.items.map((item, index) => `${index + 1}. ${item}`).join('\n');
+    const item = (index: number) => list.items[Math.min(index, list.items.length - 1)];
     const thread = [
-      `1/ Visiting Hong Kong? Here are 10 experiences worth building a trip around. 🧵`,
-      `2/ Start with the harbour: ${list.items[0]}; then take in the city from above with ${list.items[1].toLowerCase()}.`,
-      `3/ For neighbourhood energy, choose ${list.items[2].toLowerCase()} and ${list.items[3].toLowerCase()}.`,
-      `4/ Balance the city with culture and the outdoors: ${list.items[4].toLowerCase()}, ${list.items[5].toLowerCase()}, or ${list.items[8].toLowerCase()}.`,
-      `5/ Save time for slower Hong Kong: ${list.items[7].toLowerCase()} and a proper dim sum crawl.`,
+      `1/ Visiting Hong Kong? Here are ${list.items.length} experiences worth building a trip around. 🧵`,
+      `2/ Start with the harbour: ${item(0)}; then take in the city from above with ${item(1).toLowerCase()}.`,
+      `3/ For neighbourhood energy, choose ${item(2).toLowerCase()} and ${item(3).toLowerCase()}.`,
+      `4/ Balance the city with culture and the outdoors: ${item(4).toLowerCase()}${list.items.length > 5 ? `, ${item(5).toLowerCase()}` : ''}.`,
+      `5/ Save time to wander. The best Hong Kong itinerary leaves room for food, weather, and one unexpected turn.`,
     ].join('\n\n');
     const carousel = [
       `SLIDE 1\n10 things to do in Hong Kong\nA first-timer’s shortlist.`,
-      `SLIDE 2\nHARBOUR + SKYLINE\n${list.items[0]}\n${list.items[1]}`,
-      `SLIDE 3\nTHE CLASSIC WALK\n${list.items[2]}\n${list.items[3]}`,
-      `SLIDE 4\nCULTURE\n${list.items[4]}\n${list.items[6]}`,
-      `SLIDE 5\nBEYOND CENTRAL\n${list.items[5]}\n${list.items[7]}`,
-      `SLIDE 6\nTHE OUTDOOR + FOOD FINISH\n${list.items[8]}\n${list.items[9]}`,
+      `SLIDE 2\nHARBOUR + SKYLINE\n${item(0)}\n${item(1)}`,
+      `SLIDE 3\nTHE CLASSIC WALK\n${item(2)}\n${item(3)}`,
+      `SLIDE 4\nCULTURE + OUTDOORS\n${item(4)}${list.items.length > 5 ? `\n${item(5)}` : ''}`,
+      `SLIDE 5\nMAKE IT YOURS\nMix one landmark, one neighbourhood, one cultural stop, and one slower afternoon.`,
+      `SLIDE 6\nTHE TAKEAWAY\nSave the list, check the weather, and leave room to wander.`,
     ].join('\n\n');
     return {
       LinkedIn: {
         eyebrow: 'LinkedIn · Travel shortlist',
-        body: `Planning a first trip to Hong Kong? Start with this balanced shortlist—not just the usual skyline photo.\n\n${numbered}\n\nThe best Hong Kong itinerary mixes harbour views, neighbourhood walks, temples, food, and one day outside the centre. Pick three city experiences, one cultural stop, one outdoor plan, and leave room to wander.\n\nSave this list, then check opening hours, weather, and transport before you go. Which one would you add?\n\n#HongKong #TravelPlanning #AsiaTravel`,
+        body: `Planning a first trip to Hong Kong? Start with this balanced shortlist—not just the usual skyline photo.\n\n${numbered}\n\nThe best Hong Kong itinerary mixes harbour views, neighbourhood walks, temples, food, and time outside the centre. Pick a few city experiences, one cultural stop, one outdoor plan, and leave room to wander.\n\nSave this list, then check opening hours, weather, and transport before you go. Which one would you add?\n\n#HongKong #TravelPlanning #AsiaTravel`,
         meta: 'LinkedIn-ready · Travel list · Source-grounded',
       },
       'X / Twitter': { eyebrow: 'X · 5-post thread', body: thread, meta: 'X-ready · 5 posts · Source-grounded' },

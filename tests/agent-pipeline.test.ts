@@ -89,6 +89,9 @@ test('list-style fallback topics become real social content instead of a plannin
   assert.match(outputs['X / Twitter'].body, /1\//);
   assert.match(outputs.Instagram.body, /SLIDE 6/);
   assert.doesNotMatch(outputs.LinkedIn.body, /This subject deserves a specific point of view/i);
+  const topFive = buildFallbackResults('top 5 things to do in Hong Kong');
+  assert.match(topFive.LinkedIn.body, /4\. Explore Temple Street Night Market/);
+  assert.doesNotMatch(topFive.LinkedIn.body, /Dragon’s Back/);
 });
 
 test('the live pipeline researches a topic, shares one contract, and repairs an off-topic draft before returning it', async () => {
