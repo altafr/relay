@@ -37,6 +37,9 @@ async function runAgent(role: string, task: string, options: AgentOptions = {}):
       model,
       temperature: options.temperature ?? 0.35,
       max_tokens: options.maxTokens ?? 700,
+      // DeepSeek can spend a small output budget entirely on hidden reasoning.
+      // Relay needs the publishable artifact in message.content.
+      reasoning: { exclude: true },
       messages: [
         {
           role: 'system',
