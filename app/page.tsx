@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { buildFallbackResults, type ContentResult, type PostBanner } from '../lib/fallback-content';
+import type { ContentResult, PostBanner } from '../lib/content-types';
 import { initialSourceDrafts, updateSourceDraft } from '../lib/input-drafts';
 
 type Channel = 'LinkedIn' | 'X / Twitter' | 'Instagram';
@@ -44,7 +44,11 @@ export default function Home() {
   const [progress, setProgress] = useState(0);
   const [copied, setCopied] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
-  const [generatedResults, setGeneratedResults] = useState<Record<Channel, ContentResult>>(() => buildFallbackResults('multi-agent content creation'));
+  const [generatedResults, setGeneratedResults] = useState<Record<Channel, ContentResult>>({
+    LinkedIn: { eyebrow: '', body: '', meta: '' },
+    'X / Twitter': { eyebrow: '', body: '', meta: '' },
+    Instagram: { eyebrow: '', body: '', meta: '' },
+  });
   const [qualityScore, setQualityScore] = useState(0);
   const [runMode, setRunMode] = useState('OpenRouter ready');
   const [sourceLabel, setSourceLabel] = useState('');
@@ -74,7 +78,6 @@ export default function Home() {
       const data = await response.json() as { outputs?: Record<Channel, ContentResult>; banner?: PostBanner; score?: number; model?: string; error?: string; source?: { label?: string } };
       if (!response.ok || !data.outputs) {
         if (response.status >= 400 && response.status < 500 && response.status !== 503) throw new Error(`SOURCE_ERROR:${data.error || 'The source could not be processed.'}`);
-        if (response.status === 503) throw new Error('USE_FALLBACK');
         throw new Error(`RUN_ERROR:${data.error || 'The live agent run failed. Please try again.'}`);
       }
       setGeneratedResults(data.outputs);
@@ -88,12 +91,6 @@ export default function Home() {
         shouldShowResults = false;
         setError(message.replace(/^(SOURCE_ERROR|RUN_ERROR):/, ''));
         setRunMode('Run failed');
-      } else if (message === 'USE_FALLBACK') {
-        setGeneratedResults(buildFallbackResults(source));
-        setQualityScore(0);
-        setRunMode('Built-in mode');
-        setSourceLabel(source.slice(0, 80));
-        setBanner(null);
       } else {
         shouldShowResults = false;
         setError(message || 'The live agent run failed. Please try again.');

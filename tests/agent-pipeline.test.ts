@@ -10,7 +10,6 @@ import {
   renderContract,
   scoutTools,
 } from '../lib/agent-prompts.ts';
-import { buildFallbackResults } from '../lib/fallback-content.ts';
 import { POST } from '../app/api/generate/route.ts';
 
 test('every agent receives the same subject, tone, and shared voice contract', () => {
@@ -65,33 +64,6 @@ test('topic grounding rejects generic copy and accepts subject-specific copy', (
   assert.equal(isTopicGrounded('Better workflows create more engaging content for every channel.', subject), false);
   assert.equal(isTopicGrounded('Solid-state batteries could change how electric aviation balances weight and range.', subject), true);
   assert.equal(isTopicGrounded('Electric aircraft need battery advances before aviation can scale.', subject), true);
-});
-
-test('built-in mode keeps every channel explicitly tied to the entered topic without inventing research', () => {
-  const subject = 'community-owned solar projects';
-  const outputs = buildFallbackResults(subject);
-  for (const output of Object.values(outputs)) {
-    assert.equal(isTopicGrounded(output.body, subject), true);
-    assert.doesNotMatch(output.body, /four specialist agents|orchestrate focused roles/i);
-    assert.match(output.meta, /No invented research/);
-  }
-  assert.ok(outputs.LinkedIn.body.split(/\s+/).length >= 100, 'LinkedIn fallback should be a real post, not an outline');
-  assert.match(outputs['X / Twitter'].body, /1\//);
-  assert.match(outputs['X / Twitter'].body, /5\//);
-  assert.match(outputs.Instagram.body, /SLIDE 1/);
-  assert.match(outputs.Instagram.body, /SLIDE 6/);
-});
-
-test('list-style fallback topics become real social content instead of a planning outline', () => {
-  const outputs = buildFallbackResults('top 10 things to do in HK');
-  assert.match(outputs.LinkedIn.body, /Star Ferry/i);
-  assert.match(outputs.LinkedIn.body, /Dragon’s Back/i);
-  assert.match(outputs['X / Twitter'].body, /1\//);
-  assert.match(outputs.Instagram.body, /SLIDE 6/);
-  assert.doesNotMatch(outputs.LinkedIn.body, /This subject deserves a specific point of view/i);
-  const topFive = buildFallbackResults('top 5 things to do in Hong Kong');
-  assert.match(topFive.LinkedIn.body, /4\. Explore Temple Street Night Market/);
-  assert.doesNotMatch(topFive.LinkedIn.body, /Dragon’s Back/);
 });
 
 test('the live pipeline researches a topic, shares one contract, and repairs an off-topic draft before returning it', async () => {
