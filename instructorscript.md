@@ -236,7 +236,7 @@ Prefer small structured outputs—research briefs, strategy objects, drafts, and
 
 ### Is the current demo generating live AI content?
 
-If `OPENROUTER_API_KEY` is configured, yes: Scout, Muse, the three parallel Scribe workers, Pulse, and Frame all run through OpenRouter. Topic mode gives Scout OpenRouter web search; Frame uses the image model selected by `OPENROUTER_IMAGE_MODEL`. The model badge shows the text model returned by OpenRouter. Without a key, Relay clearly labels the run as a demo fallback and does not pretend that research or an image was generated.
+Yes: Scout, Muse, the three parallel Scribe workers, Pulse, and Frame all run through OpenRouter. Topic mode gives Scout OpenRouter web search; Frame uses the image model selected by `OPENROUTER_IMAGE_MODEL`. The model badge shows the text model returned by OpenRouter. If the key is missing or a model run fails, Relay reports the error and does not fabricate a post.
 
 ## Demo recovery plan
 
