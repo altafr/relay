@@ -10,10 +10,11 @@ import {
   scoutTools,
   type SocialChannel,
 } from '../../../lib/agent-prompts.ts';
+import { buildFallbackResults } from '../../../lib/fallback-content.ts';
 import { prepareSourceContext, SourceContextError, type InputMode } from '../../../lib/source-context.ts';
 
 type AgentReply = { content: string; model: string };
-type AgentOptions = { temperature?: number; tools?: Array<{ type: 'openrouter:web_search' }>; timeoutMs?: number };
+type AgentOptions = { temperature?: number; tools?: Array<{ type: 'openrouter:web_search' }>; timeoutMs?: number; signal?: AbortSignal };
 type BannerReply = { dataUrl: string; prompt: string; model: string; mediaType: string; fileExtension: string };
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -45,7 +46,9 @@ async function runAgent(role: string, task: string, options: AgentOptions = {}):
       ],
       ...(options.tools ? { tools: options.tools, tool_choice: 'auto', max_tool_calls: 4 } : {}),
     }),
-    signal: AbortSignal.timeout(options.timeoutMs ?? (options.tools ? 45_000 : 35_000)),
+    signal: options.signal
+      ? AbortSignal.any([options.signal, AbortSignal.timeout(options.timeoutMs ?? (options.tools ? 45_000 : 35_000))])
+      : AbortSignal.timeout(options.timeoutMs ?? (options.tools ? 45_000 : 35_000)),
   });
 
   const data = await response.json() as {
@@ -59,7 +62,7 @@ async function runAgent(role: string, task: string, options: AgentOptions = {}):
   return { content, model: data.model || model };
 }
 
-async function runFrameAgent(prompt: string): Promise<BannerReply> {
+async function runFrameAgent(prompt: string, signal?: AbortSignal): Promise<BannerReply> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   const model = process.env.OPENROUTER_IMAGE_MODEL || 'recraft/recraft-v4.1-flash';
   if (!apiKey) throw new Error('MISSING_OPENROUTER_KEY');
@@ -73,7 +76,7 @@ async function runFrameAgent(prompt: string): Promise<BannerReply> {
       'X-OpenRouter-Title': 'Relay Multi-Agent Content Studio',
     },
     body: JSON.stringify({ model, prompt, aspect_ratio: '16:9' }),
-    signal: AbortSignal.timeout(40_000),
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(40_000)]) : AbortSignal.timeout(40_000),
   });
   const data = await response.json() as {
     error?: { message?: string };
@@ -88,6 +91,8 @@ async function runFrameAgent(prompt: string): Promise<BannerReply> {
 }
 
 export async function POST(request: Request) {
+  let fallbackSubject = '';
+  let fallbackKind: InputMode = 'Topic';
   try {
     const body = await request.json() as { source?: string; inputMode?: InputMode; audience?: string; tone?: string };
     const source = body.source?.trim();
@@ -95,22 +100,28 @@ export async function POST(request: Request) {
 
     const inputMode = body.inputMode || 'Topic';
     const prepared = await prepareSourceContext(inputMode, source);
+    fallbackSubject = prepared.label;
+    fallbackKind = prepared.kind;
+    // Cloudflare/Sites has a finite request budget. Resolve a usable,
+    // source-grounded response before that budget can terminate the request.
+    const runSignal = AbortSignal.timeout(20_000);
     const contract = createRunContract(inputMode, prepared.label, prepared.context, body.audience, body.tone);
 
     const scout = await runAgent('Scout, the research agent', buildScoutPrompt(contract), {
       temperature: 0.15,
       tools: scoutTools(inputMode),
+      signal: runSignal,
     });
-    const muse = await runAgent('Muse, the content strategist', buildMusePrompt(contract, scout.content), { temperature: 0.25 });
+    const muse = await runAgent('Muse, the content strategist', buildMusePrompt(contract, scout.content), { temperature: 0.25, signal: runSignal });
 
     const framePrompt = buildFramePrompt(contract, scout.content, muse.content);
     const [firstDraftReplies, bannerResult] = await Promise.all([
       Promise.all(channels.map((channel) => runAgent(
         `Scribe, the ${channel} writer`,
         buildWriterPrompt(channel, contract, scout.content, muse.content),
-        { temperature: 0.45 },
+        { temperature: 0.45, signal: runSignal },
       ))),
-      runFrameAgent(framePrompt).catch(() => null),
+      runFrameAgent(framePrompt, runSignal).catch(() => null),
     ]);
     // Visual generation is an enhancement. A slow image provider must never
     // hold the text pipeline hostage or turn a usable run into a timeout.
@@ -122,7 +133,7 @@ export async function POST(request: Request) {
       pulse = await runAgent(
         'Pulse, the quality-review agent',
         buildReviewPrompt(contract, scout.content, muse.content, drafts),
-        { temperature: 0.1, timeoutMs: 25_000 },
+        { temperature: 0.1, timeoutMs: 25_000, signal: runSignal },
       );
     } catch {
       // The review gate is bounded so a provider stall cannot strand the run
@@ -140,7 +151,7 @@ export async function POST(request: Request) {
           const reply = await runAgent(
             `Pulse, the final ${channel} editor`,
             buildRevisionPrompt(channel, contract, scout.content, muse.content, drafts[channel], pulse.content),
-            { temperature: 0.2, timeoutMs: 25_000 },
+            { temperature: 0.2, timeoutMs: 25_000, signal: runSignal },
           );
           return [channel, reply] as const;
         } catch {
@@ -172,6 +183,17 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Generation failed.';
+    if (/timeout|aborted/i.test(message)) {
+      return Response.json({
+        outputs: buildFallbackResults(fallbackSubject || 'your topic'),
+        score: 0,
+        model: 'Built-in timeout fallback',
+        review: 'The live model run exceeded the request budget; source-grounded fallback content was returned.',
+        research: '',
+        banner: null,
+        source: { kind: fallbackKind, label: fallbackSubject || 'Fallback content' },
+      });
+    }
     const status = error instanceof SourceContextError ? error.status : message === 'MISSING_OPENROUTER_KEY' ? 503 : 500;
     return Response.json({ error: message }, { status });
   }
