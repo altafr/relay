@@ -75,6 +75,20 @@ test('built-in mode keeps every channel explicitly tied to the entered topic wit
     assert.doesNotMatch(output.body, /four specialist agents|orchestrate focused roles/i);
     assert.match(output.meta, /No invented research/);
   }
+  assert.ok(outputs.LinkedIn.body.split(/\s+/).length >= 100, 'LinkedIn fallback should be a real post, not an outline');
+  assert.match(outputs['X / Twitter'].body, /1\//);
+  assert.match(outputs['X / Twitter'].body, /5\//);
+  assert.match(outputs.Instagram.body, /SLIDE 1/);
+  assert.match(outputs.Instagram.body, /SLIDE 6/);
+});
+
+test('list-style fallback topics become real social content instead of a planning outline', () => {
+  const outputs = buildFallbackResults('top 10 things to do in HK');
+  assert.match(outputs.LinkedIn.body, /Star Ferry/i);
+  assert.match(outputs.LinkedIn.body, /Dragon’s Back/i);
+  assert.match(outputs['X / Twitter'].body, /1\//);
+  assert.match(outputs.Instagram.body, /SLIDE 6/);
+  assert.doesNotMatch(outputs.LinkedIn.body, /This subject deserves a specific point of view/i);
 });
 
 test('the live pipeline researches a topic, shares one contract, and repairs an off-topic draft before returning it', async () => {
