@@ -22,7 +22,7 @@ const channels: SocialChannel[] = ['LinkedIn', 'X / Twitter', 'Instagram'];
 
 async function runAgent(role: string, task: string, options: AgentOptions = {}): Promise<AgentReply> {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.OPENROUTER_MODEL || 'openrouter/auto';
+  const model = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4.1-flash';
   if (!apiKey) throw new Error('MISSING_OPENROUTER_KEY');
 
   const response = await fetch(OPENROUTER_URL, {
@@ -37,9 +37,7 @@ async function runAgent(role: string, task: string, options: AgentOptions = {}):
       model,
       temperature: options.temperature ?? 0.35,
       max_tokens: options.maxTokens ?? 700,
-      // DeepSeek can spend a small output budget entirely on hidden reasoning.
-      // Relay needs the publishable artifact in message.content.
-      reasoning: { exclude: true },
+      reasoning: { effort: 'none' },
       messages: [
         {
           role: 'system',
@@ -47,7 +45,12 @@ async function runAgent(role: string, task: string, options: AgentOptions = {}):
         },
         { role: 'user', content: task },
       ],
-      ...(options.tools ? { tools: options.tools, tool_choice: 'auto', max_tool_calls: 4 } : {}),
+      // DeepSeek V4.1 Flash can return a tool-only message for this tool,
+      // leaving message.content empty. Keep the grounded prompt path active
+      // while reserving OpenRouter web search for compatible models.
+      ...(options.tools && !model.includes('deepseek-v4.1')
+        ? { tools: options.tools, tool_choice: 'auto', max_tool_calls: 4 }
+        : {}),
     }),
     signal: options.signal
       ? AbortSignal.any([options.signal, AbortSignal.timeout(options.timeoutMs ?? (options.tools ? 120_000 : 90_000))])
