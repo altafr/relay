@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://relay-agent-studio.weekendai-7238.chatgpt.site'),
   title: 'Relay — Multi-agent Content Studio',
   description: 'Turn one topic, URL, or idea into channel-ready social content with a team of specialist AI agents.',
+  icons: { icon: '/favicon.svg' },
   openGraph: {
     title: 'Relay — Multi-agent Content Studio',
     description: 'One idea. Every channel. Made together.',

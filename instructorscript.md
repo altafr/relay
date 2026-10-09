@@ -14,9 +14,9 @@ By the end of 30 minutes, the audience should understand why multi-agent workflo
 - Confirm the **Create content** button starts the animated workflow.
 - Confirm the page automatically moves to **3 channel drafts are ready** when generation finishes.
 - Confirm Topic, URL, and Paste text each preserve their own draft when switching tabs.
-- In URL mode, point out the source label in the green completion banner; it confirms which fetched page grounded the run.
+- In URL mode, point out the source label beneath **Ready to publish**; it confirms which fetched page grounded the run.
 - Add `OPENROUTER_API_KEY` to `.env` for live generation. Set `OPENROUTER_MODEL=openrouter/auto` or choose any OpenRouter model slug.
-- Allow roughly 45–90 seconds for a live run: it performs Scout and Muse sequentially, three Scribe calls in parallel, then the Pulse review.
+- Allow roughly 60–120 seconds for a live run: it performs Scout and Muse sequentially, then runs three Scribe calls and the Frame image agent in parallel before Pulse applies the publication gate.
 - If a key is unavailable or the provider fails, Relay's built-in engine still creates topic-specific content so the stage demo remains fully interactive.
 
 ## 0:00–3:00 — Hook: one prompt is doing too many jobs
@@ -39,6 +39,7 @@ Point to the agent orbit in Relay.
 - **Muse — Strategy:** selects the core angle, audience promise, and narrative.
 - **Scribe — Writer:** converts the strategy into channel-native drafts.
 - **Pulse — Quality:** reviews clarity, tone, repetition, and unsupported claims.
+- **Frame — Visual:** turns the same research and strategy into a black-and-white LinkedIn banner.
 - **Orchestrator:** manages context and decides what each specialist receives next.
 
 Say:
@@ -57,7 +58,9 @@ Scout: structured research brief
 Muse: channel strategy and chosen angle
         ↓
 Scribe workers: LinkedIn, X, Instagram
-        ↓
+       ↘
+        Frame: black-and-white LinkedIn banner
+       ↙
 Pulse: shared evaluation and revision notes
         ↓
 Publish-ready content package
@@ -95,6 +98,7 @@ Narrate the cards as they activate:
 - “Muse is choosing one story instead of summarizing everything.”
 - “Scribe is adapting the idea to each platform’s native format.”
 - “Pulse is applying a consistent quality bar.”
+- “Frame is translating the same thesis into one monochrome visual, not inventing a separate creative direction.”
 
 When the run completes, emphasize that Relay reveals the outputs and automatically moves them into view.
 
@@ -112,6 +116,8 @@ Say:
 
 Use **Copy** once to show the publish-ready handoff.
 
+On the **LinkedIn** tab, point out Frame’s black-and-white banner above the post. Explain that Frame receives the same topic lock, Scout research, Muse strategy, and shared voice as the writers. Click **Download banner** to demonstrate that the visual is a usable generated asset rather than a mockup.
+
 ## 17:00–22:00 — Show how Codex built it
 
 Explain the build process at a high level:
@@ -121,6 +127,35 @@ Explain the build process at a high level:
 3. A subagent independently created the social-preview artwork.
 4. The app was built, checked, and privately published.
 5. A user-observed issue became a product improvement: outputs now reveal and scroll into view after completion.
+
+### Optional 60–90 second teaching insert: Git worktrees
+
+Explain worktrees here, while showing how Codex built Relay. Keep it connected to multi-agent development rather than turning it into a separate Git lesson.
+
+**Simple definition:** A Git worktree is another working directory for the same repository, usually checked out on a different branch. It lets two streams of work change the same project without sharing or overwriting the same working files.
+
+**Memorable line:** “Agents answer *who* is doing the work. Worktrees answer *where* each stream of code changes lives.”
+
+Use Relay as the example:
+
+```text
+Relay repository
+├── main checkout                 stable demo version
+├── worktree/url-extractor        URL fetching and safety changes
+└── worktree/openrouter-prompts   grounding and prompt experiments
+```
+
+For example, one Codex agent could tighten the URL extractor in an isolated worktree while another experiments with OpenRouter prompts in a second worktree. The stable demo remains untouched until each branch is tested and reviewed. Do not imply that every agent needs its own worktree: use worktrees when parallel coding tasks need filesystem and branch isolation; agents doing research or reviewing may not need one.
+
+If you want to show the terminal commands, keep this to three lines:
+
+```bash
+git worktree add ../relay-url-fix -b codex/url-extractor
+git worktree list
+git worktree remove ../relay-url-fix
+```
+
+Clarify that the branch is reviewed and merged back into the main branch after the isolated work is complete. For this 30-minute session, the diagram and memorable line are usually enough; demonstrate the commands only if the audience wants a deeper Git explanation.
 
 Teaching point:
 
@@ -138,7 +173,8 @@ Describe a production implementation:
 - Scout returns structured JSON containing claims, evidence, themes, and uncertainties.
 - Muse returns a strategy object with the central angle and channel guidance.
 - Several Scribe workers run in parallel, one per selected channel.
-- Pulse scores each draft against a rubric and requests targeted revisions.
+- Frame runs alongside the writers and generates a 16:9 monochrome LinkedIn banner through OpenRouter’s image API.
+- Pulse scores each draft against a rubric and automatically rewrites drafts that fail topic fidelity.
 - The interface streams agent status events and final drafts back to the user.
 
 Useful safeguards:
@@ -200,7 +236,7 @@ Prefer small structured outputs—research briefs, strategy objects, drafts, and
 
 ### Is the current demo generating live AI content?
 
-If `OPENROUTER_API_KEY` is configured, yes: Scout, Muse, the three parallel Scribe workers, and Pulse all make real model calls through OpenRouter. The model badge shows the model returned by OpenRouter. Without a key, Relay clearly labels the run as a demo fallback.
+If `OPENROUTER_API_KEY` is configured, yes: Scout, Muse, the three parallel Scribe workers, Pulse, and Frame all run through OpenRouter. Topic mode gives Scout OpenRouter web search; Frame uses the image model selected by `OPENROUTER_IMAGE_MODEL`. The model badge shows the text model returned by OpenRouter. Without a key, Relay clearly labels the run as a demo fallback and does not pretend that research or an image was generated.
 
 ## Demo recovery plan
 
@@ -225,3 +261,7 @@ If time is running short, skip the architecture deep dive and demonstrate the wo
 - Updated the reader fallback to use edge-compatible manual redirect handling for hosted Sites.
 - Hardened URL ingestion with standard-port enforcement, internal-host blocking, bounded downloads, article-first extraction, Markdown cleanup, and explicit untrusted-source boundaries.
 - Expanded source input from 15,000 to 150,000 characters and optimized large-source orchestration so only Scout receives the full payload.
+- Added a Relay-specific Git worktrees teaching insert, with a concise analogy, diagram, and optional terminal commands.
+- Added Frame, a fifth specialist that creates a topic-locked black-and-white LinkedIn banner in parallel with the channel writers.
+- Added a shared content contract, Topic-mode web research, deterministic topic-fidelity checks, and automatic Pulse repair for drifting drafts.
+- Rebuilt the interface as a minimal Apple-style workspace: one source composer, a connected five-agent handoff rail, and output-first publishing controls without the previous sidebar or dashboard clutter.

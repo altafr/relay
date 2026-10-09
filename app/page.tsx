@@ -1,61 +1,39 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { buildFallbackResults, type ContentResult, type PostBanner } from '../lib/fallback-content';
 import { initialSourceDrafts, updateSourceDraft } from '../lib/input-drafts';
 
 type Channel = 'LinkedIn' | 'X / Twitter' | 'Instagram';
 type InputMode = 'Topic' | 'URL' | 'Paste text';
-type ContentResult = { eyebrow: string; body: string; meta: string };
+type AgentState = 'idle' | 'waiting' | 'working' | 'done';
+type IconName = 'relay' | 'search' | 'strategy' | 'write' | 'image' | 'check' | 'copy' | 'download' | 'refresh';
 
-const agents = [
-  { name: 'Scout', role: 'Research', icon: '⌕', color: 'lime' },
-  { name: 'Muse', role: 'Strategy', icon: '◇', color: 'blue' },
-  { name: 'Scribe', role: 'Writer', icon: '✎', color: 'orange' },
-  { name: 'Pulse', role: 'Quality', icon: '✓', color: 'pink' },
+const agents: Array<{ name: string; role: string; icon: IconName; stage: number }> = [
+  { name: 'Scout', role: 'Research', icon: 'search', stage: 0 },
+  { name: 'Muse', role: 'Strategy', icon: 'strategy', stage: 1 },
+  { name: 'Scribe', role: 'Channel copy', icon: 'write', stage: 2 },
+  { name: 'Frame', role: 'LinkedIn visual', icon: 'image', stage: 3 },
+  { name: 'Pulse', role: 'Final review', icon: 'check', stage: 4 },
 ];
 
-const fallbackResults: Record<Channel, ContentResult> = {
-  LinkedIn: {
-    eyebrow: 'Thought leadership · 176 words',
-    body: `Your best marketing team might not be a team at all.\n\nWe gave 4 AI agents one brief and watched them work:\n\n→ Scout found the sharpest angle\n→ Muse shaped the narrative\n→ Scribe adapted it for every channel\n→ Pulse challenged every weak claim\n\nThe result wasn't just faster content. It was more considered content — because each agent had one job and a clear standard for success.\n\nThe future of content isn't one giant prompt. It's a small, focused team that never loses the thread.`,
-    meta: 'Professional · Insight-led · 5 hashtags',
-  },
-  'X / Twitter': {
-    eyebrow: 'Thread · 5 posts',
-    body: `1/ Your best marketing team might be made of agents.\n\nWe gave 4 AI specialists one brief. Here's what happened 🧵\n\n2/ One researched. One found the story. One wrote for the channel. One tried to break the draft.\n\n3/ The unlock wasn't more AI. It was clearer roles.\n\n4/ Every handoff added context instead of losing it.\n\n5/ Stop asking one prompt to do five jobs. Build a tiny team.`,
-    meta: 'Punchy · Educational · Thread format',
-  },
-  Instagram: {
-    eyebrow: 'Carousel · 6 slides',
-    body: `SLIDE 1\nYour new content team never sleeps.\n\nSLIDE 2\nOne topic. Four specialist agents.\n\nSLIDE 3\nSCOUT finds the signal.\n\nSLIDE 4\nMUSE finds the story.\n\nSLIDE 5\nSCRIBE writes. PULSE makes it better.\n\nSLIDE 6\nDon't write more. Orchestrate better.`,
-    meta: 'Bold · Visual · Carousel-ready',
-  },
+const channelLabels: Record<Channel, string> = {
+  LinkedIn: 'LinkedIn',
+  'X / Twitter': 'X',
+  Instagram: 'Instagram',
 };
 
-function buildFallbackResults(source: string): Record<Channel, ContentResult> {
-  const cleaned = source.replace(/\s+/g, ' ').trim();
-  const subject = cleaned.length > 120 ? `${cleaned.slice(0, 117)}…` : cleaned;
-  const label = /^https?:\/\//i.test(subject)
-    ? (() => { try { return new URL(subject).hostname.replace(/^www\./, ''); } catch { return subject; } })()
-    : subject;
-
-  return {
-    LinkedIn: {
-      eyebrow: 'Thought leadership · Instant draft',
-      body: `${label}\n\nMost teams start by asking: “How can we create more?”\n\nA better question is: “How can we make every piece more intentional?”\n\nStart with one clear idea. Research what matters. Choose the angle before writing. Then adapt the message to the way people actually use each channel.\n\nThat shift turns content creation from a volume game into a coordinated system. The result is not only faster production — it is clearer thinking, stronger consistency, and work that feels native wherever it appears.\n\nThe takeaway: better content rarely begins with more words. It begins with better orchestration.\n\n#ContentStrategy #AI #FutureOfWork`,
-      meta: 'Professional · Insight-led · Built-in engine',
-    },
-    'X / Twitter': {
-      eyebrow: 'Thread · 5 posts',
-      body: `1/ A quick thread about ${label}: 🧵\n\n2/ Most teams jump straight from an idea to a draft. That skips the most valuable step: choosing the right angle.\n\n3/ A stronger workflow separates research, strategy, writing, and review.\n\n4/ Each stage has one job. Each handoff makes the next stage smarter.\n\n5/ The lesson: don’t ask one prompt to do everything. Orchestrate focused roles around one clear outcome.`,
-      meta: 'Punchy · Educational · Built-in engine',
-    },
-    Instagram: {
-      eyebrow: 'Carousel · 6 slides',
-      body: `SLIDE 1\n${label}\n\nSLIDE 2\nONE IDEA\nStart with a clear point of view.\n\nSLIDE 3\nRESEARCH\nFind the signal before you write.\n\nSLIDE 4\nSTRATEGY\nChoose one story worth telling.\n\nSLIDE 5\nCREATE + REVIEW\nAdapt it. Challenge it. Sharpen it.\n\nSLIDE 6\nDON’T JUST CREATE MORE.\nOrchestrate better.`,
-      meta: 'Bold · Visual · Built-in engine',
-    },
-  };
+function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
+  const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
+  if (name === 'relay') return <svg {...common}><path d="M5 7.5h4v9H5zM10.5 4h4v16h-4zM16 9.5h3v7h-3z" /></svg>;
+  if (name === 'search') return <svg {...common}><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4.2 4.2"/></svg>;
+  if (name === 'strategy') return <svg {...common}><path d="m12 3 2.2 5.1L19 10l-4.8 1.9L12 17l-2.2-5.1L5 10l4.8-1.9L12 3Z"/><path d="m18.5 16 .8 1.7L21 18.5l-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8.8-1.7Z"/></svg>;
+  if (name === 'write') return <svg {...common}><path d="M4 20h4l11-11-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>;
+  if (name === 'image') return <svg {...common}><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 2-2 5 5"/></svg>;
+  if (name === 'check') return <svg {...common}><path d="m5 12 4 4L19 6"/></svg>;
+  if (name === 'copy') return <svg {...common}><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>;
+  if (name === 'download') return <svg {...common}><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>;
+  return <svg {...common}><path d="M20 7v5h-5"/><path d="M18.2 16.5A8 8 0 1 1 20 12"/></svg>;
 }
 
 export default function Home() {
@@ -63,170 +41,162 @@ export default function Home() {
   const [inputMode, setInputMode] = useState<InputMode>('Topic');
   const [sources, setSources] = useState<Record<InputMode, string>>({ ...initialSourceDrafts });
   const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState(100);
+  const [progress, setProgress] = useState(0);
   const [copied, setCopied] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
-  const [generatedResults, setGeneratedResults] = useState(fallbackResults);
-  const [qualityScore, setQualityScore] = useState(94);
+  const [generatedResults, setGeneratedResults] = useState<Record<Channel, ContentResult>>(() => buildFallbackResults('multi-agent content creation'));
+  const [qualityScore, setQualityScore] = useState(0);
   const [runMode, setRunMode] = useState('OpenRouter ready');
   const [sourceLabel, setSourceLabel] = useState('');
+  const [banner, setBanner] = useState<PostBanner | null>(null);
   const [error, setError] = useState('');
   const resultsRef = useRef<HTMLElement>(null);
-  const topic = sources[inputMode];
+  const source = sources[inputMode];
 
   async function generate() {
-    if (!topic.trim()) return;
+    if (!source.trim()) return;
     setProgress(4);
     setRunning(true);
     setHasGenerated(false);
     setCopied(false);
     setError('');
-    setRunMode('Agents running via OpenRouter');
+    setBanner(null);
+    setRunMode('Agents working');
 
-    const timer = window.setInterval(() => setProgress((value) => Math.min(88, value + 3)), 300);
+    const timer = window.setInterval(() => setProgress((value) => Math.min(92, value + 2)), 400);
     let shouldShowResults = true;
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: topic, inputMode, audience: 'Tech leaders', tone: 'Smart and bold' }),
+        body: JSON.stringify({ source, inputMode, audience: 'Tech leaders', tone: 'Smart and bold' }),
       });
-      const data = await response.json() as { outputs?: Record<Channel, ContentResult>; score?: number; model?: string; error?: string; source?: { label?: string } };
+      const data = await response.json() as { outputs?: Record<Channel, ContentResult>; banner?: PostBanner; score?: number; model?: string; error?: string; source?: { label?: string } };
       if (!response.ok || !data.outputs) {
         if (response.status >= 400 && response.status < 500 && response.status !== 503) throw new Error(`SOURCE_ERROR:${data.error || 'The source could not be processed.'}`);
         if (response.status === 503) throw new Error('USE_FALLBACK');
         throw new Error(`RUN_ERROR:${data.error || 'The live agent run failed. Please try again.'}`);
       }
       setGeneratedResults(data.outputs);
-      setQualityScore(data.score || 90);
-      setRunMode(`Live · ${data.model || 'OpenRouter'}`);
-      setSourceLabel(data.source?.label || topic.slice(0, 80));
+      setQualityScore(data.score || 0);
+      setRunMode(data.model || 'OpenRouter');
+      setSourceLabel(data.source?.label || source.slice(0, 80));
+      setBanner(data.banner || null);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : '';
       if (message.startsWith('SOURCE_ERROR:') || message.startsWith('RUN_ERROR:')) {
         shouldShowResults = false;
         setError(message.replace(/^(SOURCE_ERROR|RUN_ERROR):/, ''));
+        setRunMode('Run failed');
+      } else if (message === 'USE_FALLBACK') {
+        setGeneratedResults(buildFallbackResults(source));
+        setQualityScore(0);
+        setRunMode('Built-in mode');
+        setSourceLabel(source.slice(0, 80));
+        setBanner(null);
       } else {
-        setGeneratedResults(buildFallbackResults(topic));
-        setQualityScore(94);
-        setRunMode('Built-in engine · OpenRouter ready');
-        setSourceLabel(topic.slice(0, 80));
+        shouldShowResults = false;
+        setError(message || 'The live agent run failed. Please try again.');
+        setRunMode('Run failed');
       }
     } finally {
       window.clearInterval(timer);
       setProgress(100);
       setRunning(false);
       setHasGenerated(shouldShowResults);
-      if (shouldShowResults) setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+      if (shouldShowResults) window.setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
     }
   }
 
   async function copyResult() {
     await navigator.clipboard?.writeText(generatedResults[active].body);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1400);
+    window.setTimeout(() => setCopied(false), 1400);
   }
 
-  const activeAgent = running ? Math.min(3, Math.floor(progress / 25)) : 4;
+  function agentState(stage: number): AgentState {
+    if (!running) return hasGenerated ? 'done' : 'idle';
+    const currentStage = progress < 18 ? 0 : progress < 36 ? 1 : progress < 56 ? 2 : progress < 76 ? 3 : 4;
+    if (stage < currentStage) return 'done';
+    if (stage === currentStage) return 'working';
+    return 'waiting';
+  }
+
   const placeholders: Record<InputMode, string> = {
     Topic: 'What should your content team write about?',
-    URL: 'Paste an article, launch page, or source URL…',
-    'Paste text': 'Paste notes, a transcript, or a rough draft…',
+    URL: 'Paste a public article or product URL',
+    'Paste text': 'Paste notes, a transcript, or source material',
   };
 
   return (
-    <main>
-      <header className="topbar">
-        <a className="brand" href="#" aria-label="Relay home">
-          <span className="brand-mark"><i /><i /><i /></span>
-          <span>relay</span>
-        </a>
-        <div className="top-actions">
-          <span className="model-badge">✦ {runMode}</span>
-          <span className="demo-badge"><span /> Demo workspace</span>
-          <button className="icon-button" aria-label="Open settings">☼</button>
-          <span className="avatar">AK</span>
+    <main className="app">
+      <header className="app-header">
+        <div className="header-inner">
+          <a className="brand" href="#workspace" aria-label="Relay home"><span className="brand-icon"><Icon name="relay" size={17}/></span><span>Relay</span></a>
+          <div className="header-status" aria-live="polite"><span className={`status-light ${running ? 'is-running' : hasGenerated ? 'is-complete' : ''}`}/><span>{runMode}</span><span className="header-divider"/><span>Demo workspace</span></div>
         </div>
       </header>
 
-      <div className="app-shell">
-        <aside className="sidebar">
-          <nav aria-label="Main navigation">
-            <p className="nav-label">Workspace</p>
-            <a className="nav-item active" href="#"><span>✦</span> Create</a>
-            <a className="nav-item" href="#"><span>◴</span> Library <b>12</b></a>
-            <a className="nav-item" href="#"><span>▫</span> Templates</a>
-          </nav>
-          <div className="side-bottom">
-            <div className="tip-card">
-              <span className="tip-icon">✳</span>
-              <strong>Built with Codex</strong>
-              <p>4 agents collaborated on this content run.</p>
-              <a href="#pipeline">See the workflow →</a>
-            </div>
-            <a className="nav-item" href="#"><span>?</span> Help & shortcuts</a>
-          </div>
-        </aside>
-
-        <section className="workspace">
-          <div className="hero-row">
-            <div>
-              <p className="kicker">MULTI-AGENT CONTENT STUDIO</p>
-              <h1>One idea. Every channel.<br/><em>Made together.</em></h1>
-              <p className="subtitle">Drop in a topic, URL, or raw text. Your AI content team researches, strategizes, writes, and polishes — in parallel.</p>
-            </div>
-            <div className="agent-orbit" aria-label="Four specialist agents">
-              <div className="orbit-core"><span>✦</span><small>ORCHESTRATOR</small></div>
-              {agents.map((agent, index) => (
-                <div className={`orbit-agent orbit-${index + 1} ${agent.color}`} key={agent.name}>
-                  <span>{agent.icon}</span><small>{agent.name}</small>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="composer">
-            <div className="input-tabs">
-              {(['Topic', 'URL', 'Paste text'] as InputMode[]).map((mode) => (
-                <button key={mode} className={inputMode === mode ? 'selected' : ''} onClick={() => setInputMode(mode)}>{mode}</button>
-              ))}
-            </div>
-            <textarea value={topic} placeholder={placeholders[inputMode]} onChange={(event) => setSources((current) => updateSourceDraft(current, inputMode, event.target.value))} aria-label={`Content source: ${inputMode}`} />
-            <div className="composer-footer">
-              <div className="options"><button>Audience: <strong>Tech leaders</strong> ⌄</button><button>Tone: <strong>Smart & bold</strong> ⌄</button></div>
-              <button className="generate" onClick={generate} disabled={running || !topic.trim()}><span>✦</span>{running ? 'Agents working…' : 'Create content'}</button>
-            </div>
-          </div>
-          {error && <div className="source-error" role="alert"><span>!</span><div><strong>Couldn’t use that source</strong><p>{error}</p></div></div>}
-
-          <section className="pipeline" id="pipeline">
-            <div className="section-heading"><div><span className="live-dot" /> AGENT WORKFLOW</div><p>{running ? `${progress}% complete` : hasGenerated ? 'Run complete' : 'Ready to run'}</p></div>
-            <div className="agent-grid">
-              {agents.map((agent, index) => {
-                const state = running ? (index < activeAgent ? 'done' : index === activeAgent ? 'working' : 'waiting') : 'done';
-                return <article className={`agent-card ${agent.color} ${state}`} key={agent.name}>
-                  <div className="agent-icon">{agent.icon}</div>
-                  <div><strong>{agent.name}</strong><p>{agent.role}</p></div>
-                  <span className="status">{state === 'done' ? '✓ Done' : state === 'working' ? '• Working' : 'Waiting'}</span>
-                  <small>{['Extracted key insights', 'Built content angle', 'Drafted 3 formats', `Quality score: ${qualityScore}`][index]}</small>
-                </article>;
-              })}
-            </div>
-          </section>
-
-          {hasGenerated && <section className="results results-revealed" ref={resultsRef}>
-            <div className="ready-banner"><span>✓</span><div><strong>3 channel drafts are ready</strong><small>Source: {sourceLabel} · Pulse score {qualityScore} · {runMode}</small></div></div>
-            <div className="result-top"><div><span>OUTPUTS</span><h2>Ready to publish</h2></div><button className="more-button">•••</button></div>
-            <div className="channel-tabs">
-              {(Object.keys(generatedResults) as Channel[]).map((channel) => <button key={channel} onClick={() => setActive(channel)} className={active === channel ? 'active' : ''}><span>{channel === 'LinkedIn' ? 'in' : channel === 'X / Twitter' ? '𝕏' : '◉'}</span>{channel}</button>)}
-            </div>
-            <div className="output-card">
-              <div className="output-header"><span>{generatedResults[active].eyebrow}</span><div><button aria-label="Edit content">✎</button><button onClick={copyResult}>{copied ? '✓ Copied' : '▣ Copy'}</button></div></div>
-              <p className="output-copy">{generatedResults[active].body}</p>
-              <div className="output-footer"><span>{generatedResults[active].meta}</span><button onClick={generate}>Regenerate ↻</button></div>
-            </div>
-          </section>}
+      <div className="workspace" id="workspace">
+        <section className="intro" aria-labelledby="page-title">
+          <h1 id="page-title">Create once.<br/><span>Publish everywhere.</span></h1>
+          <p>Give Relay a topic or source. Five specialists research, shape, write, illustrate, and review one consistent social story.</p>
         </section>
+
+        <section className="composer" aria-label="Create social content">
+          <div className="source-tabs" role="tablist" aria-label="Source type">
+            {(['Topic', 'URL', 'Paste text'] as InputMode[]).map((mode) => (
+              <button key={mode} type="button" role="tab" aria-selected={inputMode === mode} className={inputMode === mode ? 'is-selected' : ''} onClick={() => setInputMode(mode)}>{mode}</button>
+            ))}
+          </div>
+          <textarea value={source} placeholder={placeholders[inputMode]} onChange={(event) => setSources((current) => updateSourceDraft(current, inputMode, event.target.value))} aria-label={`${inputMode} source`} />
+          <div className="composer-footer">
+            <div className="brief-details" aria-label="Content settings"><span>Tech leaders</span><span>Smart &amp; bold</span></div>
+            <button className="primary-action" type="button" onClick={generate} disabled={running || !source.trim()}><span>{running ? 'Creating' : 'Create content'}</span><svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12m-4-4 4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          {running && <div className="progress-track" role="progressbar" aria-label="Agent workflow progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ transform: `scaleX(${progress / 100})` }}/></div>}
+        </section>
+
+        {error && <div className="error-message" role="alert"><span><Icon name="relay" size={16}/></span><div><strong>Relay couldn’t complete this run.</strong><p>{error}</p></div><button type="button" onClick={generate}>Try again</button></div>}
+
+        <section className="workflow" aria-labelledby="workflow-title">
+          <div className="section-title"><h2 id="workflow-title">Your content team</h2><span>{running ? `${progress}%` : hasGenerated ? 'Complete' : 'Ready'}</span></div>
+          <ol className="agent-rail">
+            {agents.map((agent) => {
+              const state = agentState(agent.stage);
+              return <li className={`agent-step ${state}`} key={agent.name} aria-label={`${agent.name}, ${agent.role}: ${state}`}>
+                <span className="agent-symbol"><Icon name={agent.icon} size={17}/></span>
+                <span className="agent-copy"><strong>{agent.name}</strong><small>{agent.role}</small></span>
+                <span className="agent-state">{state === 'working' ? 'Working' : state === 'done' ? 'Done' : state === 'waiting' ? 'Waiting' : 'Ready'}</span>
+              </li>;
+            })}
+          </ol>
+        </section>
+
+        {hasGenerated && <section className="results" ref={resultsRef} aria-labelledby="results-title">
+          <div className="result-heading">
+            <div><h2 id="results-title">Ready to publish</h2><p>{sourceLabel}{qualityScore > 0 ? ` · Pulse ${qualityScore}` : ''}</p></div>
+            <div className="completion-mark" aria-label="Generation complete"><Icon name="check" size={19}/></div>
+          </div>
+
+          <div className="channel-tabs" role="tablist" aria-label="Social channel">
+            {(Object.keys(generatedResults) as Channel[]).map((channel) => <button type="button" role="tab" aria-selected={active === channel} key={channel} onClick={() => setActive(channel)} className={active === channel ? 'is-active' : ''}>{channelLabels[channel]}</button>)}
+          </div>
+
+          <article className="output-panel">
+            <div className="output-toolbar">
+              <span>{generatedResults[active].eyebrow}</span>
+              <button type="button" onClick={copyResult}><Icon name={copied ? 'check' : 'copy'} size={15}/>{copied ? 'Copied' : 'Copy'}</button>
+            </div>
+            {active === 'LinkedIn' && banner && <figure className="linkedin-banner">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={banner.dataUrl} alt={banner.alt}/>
+              <figcaption><span>Frame · Monochrome banner</span><a href={banner.dataUrl} download={`relay-linkedin-banner.${banner.fileExtension}`}><Icon name="download" size={15}/>Download</a></figcaption>
+            </figure>}
+            <p className="output-copy">{generatedResults[active].body}</p>
+            <div className="output-footer"><span>{generatedResults[active].meta}</span><button type="button" onClick={generate}><Icon name="refresh" size={14}/>Regenerate</button></div>
+          </article>
+        </section>}
       </div>
     </main>
   );

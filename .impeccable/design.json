@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-09T12:19:48Z",
+  "title": "Design System: Relay",
+  "extensions": {
+    "colorMeta": {
+      "canvas": { "role": "neutral", "displayName": "Cool Canvas", "canonical": "#f5f5f7", "tonalRamp": ["oklch(15% 0.004 270)", "oklch(27% 0.004 270)", "oklch(39% 0.004 270)", "oklch(51% 0.004 270)", "oklch(63% 0.004 270)", "oklch(75% 0.004 270)", "oklch(87% 0.004 270)", "oklch(95% 0.004 270)"] },
+      "surface": { "role": "neutral", "displayName": "Clear Surface", "canonical": "#ffffff", "tonalRamp": ["oklch(15% 0 0)", "oklch(27% 0 0)", "oklch(39% 0 0)", "oklch(51% 0 0)", "oklch(63% 0 0)", "oklch(75% 0 0)", "oklch(87% 0 0)", "oklch(95% 0 0)"] },
+      "surface-muted": { "role": "neutral", "displayName": "Mist Group", "canonical": "#ececf0", "tonalRamp": ["oklch(15% 0.006 270)", "oklch(27% 0.006 270)", "oklch(39% 0.006 270)", "oklch(51% 0.006 270)", "oklch(63% 0.006 270)", "oklch(75% 0.006 270)", "oklch(87% 0.006 270)", "oklch(95% 0.006 270)"] },
+      "ink": { "role": "neutral", "displayName": "Graphite Ink", "canonical": "#1d1d1f", "tonalRamp": ["oklch(15% 0.004 270)", "oklch(27% 0.004 270)", "oklch(39% 0.004 270)", "oklch(51% 0.004 270)", "oklch(63% 0.004 270)", "oklch(75% 0.004 270)", "oklch(87% 0.004 270)", "oklch(95% 0.004 270)"] },
+      "secondary": { "role": "neutral", "displayName": "Slate Secondary", "canonical": "#6e6e73", "tonalRamp": ["oklch(15% 0.008 270)", "oklch(27% 0.008 270)", "oklch(39% 0.008 270)", "oklch(51% 0.008 270)", "oklch(63% 0.008 270)", "oklch(75% 0.008 270)", "oklch(87% 0.008 270)", "oklch(95% 0.008 270)"] },
+      "tertiary": { "role": "neutral", "displayName": "Quiet Tertiary", "canonical": "#6e6e73", "tonalRamp": ["oklch(15% 0.008 270)", "oklch(27% 0.008 270)", "oklch(39% 0.008 270)", "oklch(51% 0.008 270)", "oklch(63% 0.008 270)", "oklch(75% 0.008 270)", "oklch(87% 0.008 270)", "oklch(95% 0.008 270)"] },
+      "line": { "role": "neutral", "displayName": "Hairline Gray", "canonical": "#d8d8dc", "tonalRamp": ["oklch(15% 0.006 270)", "oklch(27% 0.006 270)", "oklch(39% 0.006 270)", "oklch(51% 0.006 270)", "oklch(63% 0.006 270)", "oklch(75% 0.006 270)", "oklch(87% 0.006 270)", "oklch(95% 0.006 270)"] },
+      "accent": { "role": "primary", "displayName": "Relay Cobalt", "canonical": "#0071e3", "tonalRamp": ["oklch(15% 0.10 250)", "oklch(27% 0.14 250)", "oklch(39% 0.17 250)", "oklch(51% 0.19 250)", "oklch(63% 0.18 250)", "oklch(75% 0.14 250)", "oklch(87% 0.08 250)", "oklch(95% 0.03 250)"] },
+      "accent-pressed": { "role": "primary", "displayName": "Pressed Cobalt", "canonical": "#0066cc", "tonalRamp": ["oklch(15% 0.10 250)", "oklch(27% 0.14 250)", "oklch(39% 0.17 250)", "oklch(51% 0.19 250)", "oklch(63% 0.18 250)", "oklch(75% 0.14 250)", "oklch(87% 0.08 250)", "oklch(95% 0.03 250)"] },
+      "success": { "role": "semantic", "displayName": "Completion Green", "canonical": "#248a3d", "tonalRamp": ["oklch(15% 0.07 145)", "oklch(27% 0.10 145)", "oklch(39% 0.13 145)", "oklch(51% 0.14 145)", "oklch(63% 0.13 145)", "oklch(75% 0.10 145)", "oklch(87% 0.06 145)", "oklch(95% 0.02 145)"] },
+      "danger": { "role": "semantic", "displayName": "Error Red", "canonical": "#c9342f", "tonalRamp": ["oklch(15% 0.09 25)", "oklch(27% 0.13 25)", "oklch(39% 0.17 25)", "oklch(51% 0.19 25)", "oklch(63% 0.17 25)", "oklch(75% 0.12 25)", "oklch(87% 0.07 25)", "oklch(95% 0.03 25)"] },
+      "focus": { "role": "primary", "displayName": "Focus Cobalt Wash", "canonical": "rgba(0, 113, 227, 0.34)", "tonalRamp": ["oklch(15% 0.08 250 / 0.34)", "oklch(27% 0.11 250 / 0.34)", "oklch(39% 0.14 250 / 0.34)", "oklch(51% 0.16 250 / 0.34)", "oklch(63% 0.15 250 / 0.34)", "oklch(75% 0.12 250 / 0.34)", "oklch(87% 0.07 250 / 0.34)", "oklch(95% 0.03 250 / 0.34)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Workspace Display", "purpose": "Primary workspace statement only." },
+      "headline": { "displayName": "Result Headline", "purpose": "Completion and result-section headings." },
+      "title": { "displayName": "Section Title", "purpose": "Compact brand and section headings." },
+      "body": { "displayName": "Reading Body", "purpose": "Generated content and sustained reading." },
+      "label": { "displayName": "Control Label", "purpose": "Tabs, actions, status, and metadata." }
+    },
+    "shadows": [
+      { "name": "composer-ambient", "value": "0 18px 50px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)", "purpose": "Lifts the source composer as the primary input surface." },
+      { "name": "output-ambient", "value": "0 16px 46px rgba(0, 0, 0, 0.07), 0 2px 7px rgba(0, 0, 0, 0.04)", "purpose": "Lifts generated work without competing with the composer." },
+      { "name": "selection-contact", "value": "0 1px 4px rgba(0, 0, 0, 0.12)", "purpose": "Separates a selected segment from its mist-gray track." },
+      { "name": "active-agent", "value": "0 7px 18px rgba(0, 113, 227, 0.22)", "purpose": "Marks the currently working specialist." }
+    ],
+    "motion": [
+      { "name": "press", "value": "100ms ease-out", "purpose": "Immediate 0.97 scale feedback for buttons and tabs." },
+      { "name": "control-state", "value": "150ms ease-out", "purpose": "Color and background changes on interactive controls." },
+      { "name": "agent-state", "value": "220ms ease-out", "purpose": "Transfers color, lift, and shadow between specialists." },
+      { "name": "progress", "value": "400ms ease-out", "purpose": "Advances the composer progress line." },
+      { "name": "materialize", "value": "420ms cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Introduces completed results with a short rise and blur release." },
+      { "name": "status-pulse", "value": "1400ms ease-in-out infinite", "purpose": "Signals an active run in the top bar." }
+    ],
+    "breakpoints": [
+      { "name": "rail-wrap", "value": "820px" },
+      { "name": "mobile", "value": "600px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single cobalt action used to start the agent workflow.",
+      "html": "<button class=\"ds-primary-action\"><span>Create content</span><svg width=\"17\" height=\"17\" viewBox=\"0 0 20 20\" fill=\"none\" aria-hidden=\"true\"><path d=\"M4 10h12m-4-4 4 4-4 4\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button>",
+      "css": ".ds-primary-action { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 15px; color: var(--surface); background: var(--accent); border: 0; border-radius: 10px; font: 650 0.82rem/1.5 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif; cursor: pointer; transition: background 150ms ease-out, transform 100ms ease-out; } .ds-primary-action:hover { background: var(--accent-pressed); } .ds-primary-action:active { transform: scale(0.97); } .ds-primary-action:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; } .ds-primary-action:disabled { cursor: default; opacity: 0.45; transform: none; }"
+    },
+    {
+      "name": "Quiet Action",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "A compact text-and-icon action for copy, regenerate, and download.",
+      "html": "<button class=\"ds-quiet-action\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"8\" y=\"8\" width=\"11\" height=\"11\" rx=\"2\"/><path d=\"M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2\"/></svg>Copy</button>",
+      "css": ".ds-quiet-action { display: inline-flex; align-items: center; gap: 6px; padding: 7px 9px; color: var(--accent); background: transparent; border: 0; border-radius: 7px; font: 650 0.72rem/1.5 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif; cursor: pointer; transition: background 150ms ease-out, transform 100ms ease-out; } .ds-quiet-action:hover { background: #eaf3fc; } .ds-quiet-action:active { transform: scale(0.97); } .ds-quiet-action:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "nav",
+      "refersTo": "segmented-control",
+      "description": "A mist-gray switcher for source modes and publishing channels.",
+      "html": "<div class=\"ds-segmented\" role=\"tablist\"><button role=\"tab\" aria-selected=\"true\">Topic</button><button role=\"tab\" aria-selected=\"false\">URL</button><button role=\"tab\" aria-selected=\"false\">Paste text</button></div>",
+      "css": ".ds-segmented { width: fit-content; display: flex; gap: 2px; padding: 3px; background: var(--surface-muted); border-radius: 10px; } .ds-segmented button { min-height: 30px; padding: 0 12px; color: var(--secondary); background: transparent; border: 0; border-radius: 7px; font: 600 0.75rem/1.5 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif; cursor: pointer; transition: color 160ms ease-out, background 160ms ease-out, transform 100ms ease-out; } .ds-segmented button:hover { color: var(--ink); } .ds-segmented button:active { transform: scale(0.97); } .ds-segmented button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; } .ds-segmented button[aria-selected='true'] { color: var(--ink); background: var(--surface); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }"
+    },
+    {
+      "name": "Source Input",
+      "kind": "input",
+      "refersTo": "source-input",
+      "description": "The large borderless source field that anchors the workflow.",
+      "html": "<textarea class=\"ds-source-input\" aria-label=\"Topic source\" placeholder=\"What should your content team write about?\"></textarea>",
+      "css": ".ds-source-input { width: 100%; min-height: 142px; padding: 24px 10px 18px; resize: vertical; color: var(--ink); caret-color: var(--accent); background: transparent; border: 0; border-radius: 0; outline: 0; font: 400 1.3rem/1.45 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif; letter-spacing: -0.015em; } .ds-source-input::placeholder { color: var(--tertiary); opacity: 1; } .ds-source-input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    },
+    {
+      "name": "Composer Surface",
+      "kind": "card",
+      "refersTo": "composer",
+      "description": "The elevated white working surface that combines source selection, input, metadata, and primary action.",
+      "html": "<section class=\"ds-composer\"><div class=\"ds-composer-label\">Source composer</div><div class=\"ds-composer-field\">What should your content team write about?</div><div class=\"ds-composer-footer\"><span>Tech leaders</span><strong>Create content →</strong></div></section>",
+      "css": ".ds-composer { overflow: hidden; padding: 12px; color: var(--ink); background: var(--surface); border-radius: 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif; } .ds-composer-label { width: fit-content; padding: 5px 9px; color: var(--secondary); background: var(--surface-muted); border-radius: 7px; font-size: 0.72rem; font-weight: 600; } .ds-composer-field { min-height: 100px; padding: 24px 10px 18px; color: var(--tertiary); font-size: 1.3rem; letter-spacing: -0.015em; } .ds-composer-footer { min-height: 52px; padding: 10px 0 0 10px; display: flex; align-items: center; justify-content: space-between; color: var(--secondary); border-top: 1px solid #e8e8eb; font-size: 0.75rem; } .ds-composer-footer strong { padding: 10px 15px; color: var(--surface); background: var(--accent); border-radius: 10px; font-size: 0.82rem; }"
+    },
+    {
+      "name": "Connected Agent Rail",
+      "kind": "custom",
+      "description": "The signature shared rail that transfers one active cobalt state across five specialists.",
+      "html": "<ol class=\"ds-agent-rail\"><li class=\"is-done\"><span class=\"ds-agent-symbol\">✓</span><span><strong>Scout</strong><small>Research · Done</small></span></li><li class=\"is-working\"><span class=\"ds-agent-symbol\">✦</span><span><strong>Muse</strong><small>Strategy · Working</small></span></li><li><span class=\"ds-agent-symbol\">✎</span><span><strong>Scribe</strong><small>Channel copy · Waiting</small></span></li></ol>",
+      "css": ".ds-agent-rail { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0; padding: 0; color: var(--tertiary); list-style: none; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif; } .ds-agent-rail li { position: relative; min-width: 0; min-height: 82px; display: grid; grid-template-columns: 34px minmax(0, 1fr); align-content: center; align-items: center; gap: 9px; padding: 14px 12px; } .ds-agent-rail li + li::before { content: ''; position: absolute; left: 0; top: 22px; bottom: 22px; width: 1px; background: var(--line); } .ds-agent-symbol { width: 34px; height: 34px; display: grid; place-items: center; color: var(--secondary); background: #e8e8ec; border-radius: 10px; transition: color 220ms ease-out, background 220ms ease-out, transform 220ms ease-out, box-shadow 220ms ease-out; } .ds-agent-rail strong, .ds-agent-rail small { display: block; white-space: nowrap; } .ds-agent-rail strong { color: var(--secondary); font-size: 0.77rem; } .ds-agent-rail small { margin-top: 3px; font-size: 0.65rem; } .ds-agent-rail .is-working .ds-agent-symbol { color: var(--surface); background: var(--accent); transform: translateY(-2px); box-shadow: 0 7px 18px rgba(0, 113, 227, 0.22); } .ds-agent-rail .is-working strong, .ds-agent-rail .is-working small { color: var(--accent); } .ds-agent-rail .is-done .ds-agent-symbol { color: var(--success); background: #e5f4e8; } .ds-agent-rail .is-done strong { color: var(--ink); }"
+    },
+    {
+      "name": "Output Panel",
+      "kind": "card",
+      "description": "The quiet reading surface for generated channel content and its compact actions.",
+      "html": "<article class=\"ds-output-panel\"><header><span>LINKEDIN POST</span><button>Copy</button></header><p>Generated social content is set on a calm, readable measure with generous leading.</p><footer><span>1,240 characters</span><button>Regenerate</button></footer></article>",
+      "css": ".ds-output-panel { overflow: hidden; color: #333336; background: var(--surface); border-radius: 16px; box-shadow: 0 16px 46px rgba(0, 0, 0, 0.07), 0 2px 7px rgba(0, 0, 0, 0.04); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif; } .ds-output-panel header, .ds-output-panel footer { min-height: 50px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 18px; color: var(--secondary); background: #fafafa; font-size: 0.7rem; } .ds-output-panel header { border-bottom: 1px solid #e8e8eb; } .ds-output-panel footer { border-top: 1px solid #e8e8eb; } .ds-output-panel p { max-width: 72ch; min-height: 120px; margin: 0; padding: 30px 32px 38px; font-size: 0.94rem; line-height: 1.68; } .ds-output-panel button { padding: 7px 9px; color: var(--accent); background: transparent; border: 0; border-radius: 7px; font-size: 0.72rem; font-weight: 650; cursor: pointer; transition: background 150ms ease-out, transform 100ms ease-out; } .ds-output-panel button:hover { background: #eaf3fc; } .ds-output-panel button:active { transform: scale(0.97); } .ds-output-panel button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Calm Relay Desk",
+    "overview": "Relay is a focused creative work surface: cool, precise, and quietly capable. The source is always the center of gravity, while status, agent activity, and publishing tools recede until they are needed. The interface should feel like a well-resolved native productivity tool rather than a dashboard or a marketing site.\n\nIts Apple-influenced restraint comes from system typography, cool-white tonal layers, graphite text, familiar control geometry, and one carefully rationed cobalt accent. Ambient depth separates the two primary working surfaces; thin dividers organize everything else. Motion communicates state transfer and materialization, never decoration.",
+    "keyCharacteristics": [
+      "Cool-white canvas with crisp white working surfaces and mist-gray control groups.",
+      "Source-first hierarchy with large, tightly set graphite display type.",
+      "Restrained cobalt reserved for selection, progress, focus, and primary action.",
+      "A connected five-agent handoff rail instead of independent dashboard cards.",
+      "Functional translucency confined to the sticky top bar.",
+      "Immediate pressed feedback and short, restrained state transitions."
+    ],
+    "rules": [
+      { "name": "The One Cobalt Rule", "body": "Use cobalt only where the interface is selected, progressing, focused, or actionable; rarity preserves its meaning.", "section": "colors" },
+      { "name": "The Cool Field Rule", "body": "Keep major backgrounds within the cool-white and mist-gray family so content remains the visual artifact.", "section": "colors" },
+      { "name": "The System Voice Rule", "body": "Use the native sans stack everywhere; do not introduce a display face or monospace accent.", "section": "typography" },
+      { "name": "The Tight-Then-Open Rule", "body": "Headlines use tight tracking and compact line-height, while reading copy uses generous leading.", "section": "typography" },
+      { "name": "The One-Column Rule", "body": "Extend the centered workspace before adding parallel columns; hierarchy comes from sequence, not dashboard density.", "section": "layout" },
+      { "name": "The Working-Surface Rule", "body": "Ambient elevation belongs only to the composer and generated-output surface; ordinary groups remain flat and separated by tone or hairlines.", "section": "elevation" },
+      { "name": "The Functional Glass Rule", "body": "Translucency is navigation context, never decorative card material.", "section": "elevation" },
+      { "name": "The Nested Radius Rule", "body": "Inner controls must be visibly tighter than the surface that contains them.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do keep each screen source-first, with one obvious primary action and a calm sequential reading order.",
+      "Do use Relay Cobalt only for selected, actionable, focused, or live-progress states.",
+      "Do preserve 44px touch targets for segmented controls and output actions on narrow screens.",
+      "Do support reduced motion, reduced transparency, and increased contrast without changing information hierarchy.",
+      "Do use thin dividers and tonal layers for ordinary grouping; reserve ambient shadows for primary working surfaces."
+    ],
+    "donts": [
+      "Don't add a sidebar dashboard, fake navigation, metric tiles, or independent cards for each agent.",
+      "Don't turn the concise workspace heading into oversized marketing-hero chrome.",
+      "Don't stack translucent or glassy cards; translucency belongs only to the sticky top bar.",
+      "Don't introduce extra accent hues, gradients, decorative imagery, or a secondary typeface.",
+      "Don't animate for spectacle; motion should communicate pressed feedback, handoff progress, or result arrival."
+    ]
+  }
+}
